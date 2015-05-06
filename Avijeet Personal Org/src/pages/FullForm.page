@@ -1,0 +1,17 @@
+<apex:page controller="compositionExample">
+    <apex:messages />   
+    
+    <apex:composition template="Composition">        
+
+        <apex:define name="age">        
+            <apex:outputPanel rendered="true" id="panel">
+                <apex:outputText >{!a}</apex:outputText>
+                <apex:include pageName="Jquery_Slider"/>            
+            </apex:outputPanel>
+        </apex:define>   
+   
+    
+    </apex:composition>   
+    
+    
+</apex:page>

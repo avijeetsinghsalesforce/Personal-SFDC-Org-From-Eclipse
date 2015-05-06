@@ -1,0 +1,7 @@
+<apex:page controller="ABCController">
+<apex:form >
+<apex:inputText value="{!val}" />
+<apex:commandButton value="Save" action="{!Submit}" reRender="outvalue" immediate="true"/>
+<apex:outputText value="{!val}" id="outvalue"/>
+</apex:form>
+</apex:page>

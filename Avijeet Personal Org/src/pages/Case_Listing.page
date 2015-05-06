@@ -1,0 +1,37 @@
+<apex:page standardcontroller="Case" extensions="CaseListingCtrl">   
+<apex:pageMessages />
+<apex:form >   
+<apex:outputPanel id="caseTable">
+    <apex:pageBlock rendered="{!caseList.size > 0}" >
+        <apex:pageBlockTable value="{!caseWrapperList}" var="caseVar">
+            <apex:column >               
+                 <apex:inputCheckbox value="{!caseVar.isSelected}" id="checkedone"/>              
+            </apex:column>     
+            <apex:column value="{!caseVar.c.id}" headerValue="Case Id"/>
+            <apex:column value="{!caseVar.c.priority}" headerValue="Prioity"/>
+            <apex:column value="{!caseVar.c.status}" headerValue="Status"/>
+            <apex:column value="{!caseVar.c.subject}" headerValue="Subject"/>
+            <apex:column value="{!caseVar.c.description}" headerValue="Description"/>
+        </apex:pageBlockTable>
+        
+        <apex:outputPanel layout="block" styleClass="pSearchShowMore" id="otpNav">  
+            <apex:image url="/img/search_prevarrow_disabled.gif" styleClass="prevArrow" rendered="{!NOT(HasPrevious)}"/>  
+            <apex:image url="/img/search_prevarrow.gif" title="Previous Page" styleClass="prevArrow" rendered="{!HasPrevious}"/>  
+            <apex:commandLink action="{!Previous}" title="Previous Page" value="Previous Page" rendered="{!HasPrevious}" reRender="caseTable"/>  
+            <apex:outputPanel styleClass="pShowLess noLink" style="color:grey" rendered="{!NOT(HasPrevious)}">Previous Page</apex:outputPanel>           
+            &nbsp;({!IF(caseCon.PageNumber == 1,1,((caseCon.PageNumber -1) * caseCon.PageSize)+1)}-{!IF(caseCon.resultSize < caseCon.PageSize,caseCon.resultSize,caseCon.PageNumber * caseCon.pageSize)})&nbsp;  
+            <apex:outputPanel styleClass="pShowLess noLink" style="color:grey" rendered="{!NOT(HasNext)}">Next Page</apex:outputPanel>           
+            <apex:commandLink title="Next Page" value="Next Page" rendered="{!HasNext}" action="{!Next}" reRender="caseTable"/>&nbsp;  
+            <apex:image url="/img/search_nextarrow.gif" title="Next Page" styleClass="nextArrow" rendered="{!HasNext}"/>  
+            <apex:image url="/img/search_nextarrow_disabled.gif" rendered="{!NOT(HasNext)}"/>            
+        </apex:outputPanel>  
+        <apex:pageblockButtons >
+            <apex:commandButton action="{!selectedCases}" value="Select Cases" />  
+            <apex:commandButton value="Cancel" />  
+        </apex:pageblockButtons>
+    </apex:pageBlock>  
+    
+</apex:outputPanel>     
+    
+</apex:form>
+</apex:page>

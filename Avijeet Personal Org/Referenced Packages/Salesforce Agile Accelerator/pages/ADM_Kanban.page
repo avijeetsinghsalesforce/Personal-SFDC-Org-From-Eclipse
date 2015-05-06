@@ -1,0 +1,1742 @@
+<apex:page title="Kanban: {!teamName}" sidebar="false" controller="agf.ADM_KanbanBoardController" standardstylesheets="false" tabStyle="ADM_Kanban_Board__tab">
+
+<apex:stylesheet value="{!$Resource.agf__kanban_fontawesome}" />
+<apex:stylesheet value="{!$Resource.agf__kanban_style}" />
+<apex:stylesheet value="{!$Resource.agf__kanban_jqueryui_structure}" />
+
+<apex:includeScript value="{!$Resource.agf__kanban_handlebars}" />
+<apex:includeScript value="{!$Resource.agf__kanban_jquery}" />
+<apex:includeScript value="{!$Resource.agf__kanban_jqueryui}" />
+<apex:includeScript value="{!$Resource.agf__ADM_common_js}" />
+<apex:includeScript value="{!$Resource.agf__ADM_autocomplete2js}" />
+
+
+<c:ADM_WorkDialog kanban="true" teamid="{!teamId}" />
+
+<div id="kanbanContainer">
+    <div id="containerToolbar">
+        <div id="toolbarTitle">{!teamName}</div>
+        <ul class="toolbarButtons" id="toolbarButtonsLeft">
+            <!--li><button id="buttonCreateBug"><i class="fa fa-bug"></i><span>Create Bug</span></button></li-->
+            <!--li><button id="buttonCreateStory"><i class="fa fa-book"></i><span>Create Story</span></button></li-->
+            <li><button id="buttonRefresh"><i class="fa fa-refresh"></i><span>Refresh</span></button></li>
+            <li><button id="buttonBacklog"><i class="fa fa-list"></i><span>Backlog</span></button></li>
+            <li><button id="buttonFilter"><i class="fa fa-filter"></i><span>Filter</span></button></li>
+            <!--li><button id="buttonCharts"><i class="fa fa-area-chart"></i><span>Charts</span></button></li-->
+        </ul>
+        <ul class="toolbarButtons" id="toolbarButtonsRight">
+            <!--li><button id="buttonColumns"><i class="fa fa-columns"></i><span>Columns<i class="fa fa-caret-down"></i></span></button></li-->
+            <li><button id="buttonSettings"><i class="fa fa-cog"></i><span>Settings</span></button></li>
+            <li><button id="buttonFullscreen"><i class="fa fa-arrows-alt"></i><span>Full Screen</span></button></li>
+           
+        </ul>
+    </div>
+	<div id="dragDropContainment"></div>
+	<div id="kanbanContents"></div>
+	<div id="kanbanLoading">
+		<div class="fa fa-refresh fa-spin"></div>
+	</div>
+</div>
+
+<div id="errorDialog" class="ui-dialog" title="Error"></div>
+
+<div id="filterDialog">
+	<div id="filterResults"></div>
+
+	Search:
+	<input id="filterSearch" type="text" name="text" value="" autocomplete="off" onkeyup="updateFilter();" />
+
+	<div class="filterTopic" id="filterRecordTypes">
+		Record Type:
+		<div id="filterBoxRecordTypes" class="itemList"></div>
+	</div>
+	
+	<div class="filterTopic" id="filterThemes">
+		Theme:
+		<div id="filterBoxThemes" class="itemList"></div>
+	</div>
+	
+	<div class="filterTopic" id="filterEpics">
+		Epic:
+		<div id="filterBoxEpics" class="itemList"></div>
+	</div>
+	
+	<div class="filterTopic" id="filterBuilds">
+		Scheduled Build:
+		<div id="filterBoxBuilds" class="itemList"></div>
+	</div>
+
+	<div class="filterTopic" id="filterAssignees">
+		Assignee:
+		<div id="filterBoxAssignees" class="itemList"></div>
+	</div>
+
+	<div class="filterTopic" id="filterQEs">
+		QE:
+		<div id="filterBoxQEs" class="itemList"></div>
+	</div>
+</div>
+
+<div id="backlogDialog" class="ui-dialog">
+		<div id="backlogDialogLoading">
+			<div class="fa fa-refresh fa-spin"></div>
+		</div>
+		
+		<div id="backlogDialogHeader">
+			<ul class="sTabs">
+				<li id="tabBacklog" class="on"><a href="#">Backlog</a></li>
+				<li id="tabRecent"><a href="#">Recent</a></li>
+			</ul>
+			
+			<div class="ui-dialog-error"></div>
+	
+			<center>
+				Select column to add work to:
+				<select id="backlogColumnSelect"></select>
+			</center>
+		</div>
+
+		<div class="workList" id="backlogDialogWorkList"></div>
+		<div class="workList" id="backlogDialogRecentWorkList" style="display:none;"></div>
+</div>
+
+<div id="settingsDialog" class="ui-dialog" title="Settings">
+	<div id="kanbanSettingsContents">
+		<div id="kanbanSettingsLoading">
+			<div class="fa fa-refresh fa-spin"></div>
+		</div>
+	</div>
+	<div class="ui-dialog-error"></div>
+	<div id="propertyPanel">
+		<form method="post" action="ADM_Kanban" onSubmit="return false" autocomplete="off">
+			<div id="propertyForm" style="display:table;width:100%;">
+				<div style="display:table-cell;vertical-align:top;width:25%;padding-right:15px;">
+					<div class="propertyHeader">Action:</div>
+					<div style="display:table;">
+						<div style="display:table-row;">
+							<div style="display:table-cell;vertical-align:middle;padding-bottom:10px;vertical-align:top;">
+								<input type="radio" name="type" onChange="actionSelected(this)" id="typeUpdate" value="update" /><label for="typeUpdate"> Update/Remove</label><br/>
+								<input type="radio" name="type" onChange="actionSelected(this)" id="typeSibling" value="sibling" /><label for="typeSibling"> Create Sibling (to right)</label><br/>
+								<input type="radio" name="type" onChange="actionSelected(this)" id="typeChild" value="child" /><label for="typeChild"> Create Child</label><br/>
+								<input type="radio" name="type" onChange="actionSelected(this)" id="typeSwimlane" value="swimlane" /><label for="typeSwimlane"> Create Swimlane (bottom)</label>
+								<div style="font-size:11px;padding-left:22px;">At this time, we do not support lanes within columns. To create a swimlane, make sure no column is selected. <a href="#" onClick="refreshSettings();return false">Refresh settings</a>.</div>
+							</div>
+						</div>
+					</div>
+				</div>
+	
+				<div class="propertyFormOptions" style="display:table-cell;vertical-align:top;width:25%;padding-right:15px;">
+					<div id="editMode" class="propertyHeader">Update:</div>
+					<div style="display:table;">
+						<div style="display:table-row;">
+							<div style="display:table-cell;vertical-align:middle;padding-bottom:5px;padding-right:10px;"><label for="columnName">Label:</label></div>
+							<div style="display:table-cell;vertical-align:middle;padding-bottom:5px;"><input type="text" id="columnName" name="columnName" value="" style="width:100px;" onkeypress="realtimeUpdate();" onkeyup="realtimeUpdate();" /></div>
+						</div>
+						<div style="display:table-row;">
+							<div style="display:table-cell;vertical-align:middle;padding-right:10px;"><label for="wipLimit">WIP Limit:</label></div>
+							<div style="display:table-cell;vertical-align:middle;"><input type="number" id="wipLimit" name="wipLimit" value="" style="width:100px;" onkeypress="realtimeUpdate();" onkeyup="realtimeUpdate();" onchange="realtimeUpdate();" /></div>
+						</div>
+					</div>
+					<div style="text-align:right;visibility:hidden;">
+						<button id="updateButton"><span>Update</span></button>
+					</div>
+				</div>
+				
+	
+				<div class="propertyFormOptions" style="display:table-cell;vertical-align:top;width:30%;padding-right:15px;">
+					<div class="propertyHeader">Status Mapping:</div>
+					<div style="font-size:11px;margin-bottom:7px;">Optional. Mapping will help keep your work up-to-date by updating the status on your behalf when moving between columns.</div>
+					<div style="display:table;">
+						<div style="display:table-row;">
+							<div id="statusMappingHolder1" style="display:table-cell;vertical-align:middle;padding-bottom:10px;vertical-align:top;padding-right:15px;"></div>
+							<div id="statusMappingHolder2" style="display:table-cell;vertical-align:middle;padding-bottom:10px;vertical-align:top;"></div>
+						</div>
+					</div>
+				</div>
+
+				<div class="propertyFormOptions" style="display:table-cell;vertical-align:top;width:20%;">
+					<div class="propertyHeader">Remove:</div>
+					<div id="workExists">
+						<i class="fa fa-exclamation-triangle" style="color:#C58E00;"></i> The column you selected contains work. Please move work to another column first.
+					</div>
+					<div id="childrenExist">
+						<i class="fa fa-exclamation-triangle" style="color:#C58E00;"></i> The column you selected contains children columns. Please remove those first.
+					</div>
+					<div id="removeColumnButton">
+						<button id="removeColumn"><span>Remove Column</span></button>
+					</div>
+				</div>
+			</div>
+		</form>
+	</div>
+</div>
+
+<script id="filter-settings-template" type="text/x-handlebars-template">
+	<div class="itemRow">
+		<div class="itemCheckbox"><input type="checkbox" id="item-{{ id }}" value="{{ id }}" /></div>
+		<div class="itemTitle"><label for="item-{{ id }}">{{ label }}</label></div>
+	</div>
+</script>
+
+<script id="column-settings-template" type="text/x-handlebars-template">
+    <div class="settingsColumn{{#if isSwimlane}} settingsSwimlane{{/if}}" id="settings-{{ id }}" data-id="{{ id }}" data-title="{{ title }}"{{#if parent}} data-parent="{{ parent }}"{{/if}}{{#if numberOfChildren}} data-children="{{ numberOfChildren }}"{{/if}}{{#if numberOfWork}} data-numberofwork="{{ numberOfWork }}"{{/if}}{{#if wipLimit}} data-wiplimit="{{ wipLimit }}"{{/if}}{{#if statusIds}} data-statusids="{{ statusIds }}"{{/if}} data-level="{{ level }}" data-position="{{ position }}">
+        <div class="holderTitle">
+            <div class="titleText">
+	            <span class="titleOnly">{{ title }}</span>
+	            <span class="progressTitle"{{#if wipLimit}} style="display:inline-block;"{{/if}}>{{ wipLimit }}</span>
+			</div>
+            <div class="statusesText">{{ statuses }}</div>
+        </div>
+    </div>
+</script>
+
+<script id="status-template" type="text/x-handlebars-template">
+	<input type="checkbox" name="statusMapping" class="statusMapping" id="statusMapping{{ num }}" value="{{ value }}" onchange="realtimeUpdate();" /><label for="statusMapping{{ num }}"> {{ label }}</label><br/>
+</script>
+
+<script id="column-template" type="text/x-handlebars-template">
+    <div class="holderContents" id="{{ id }}" data-max="{{ max }}">
+        <div class="holderTitle">
+            <div class="titleText">
+                {{ title }}
+                <span class="progressTitle"></span>
+                </div>
+			<div class="progress">
+                <div class="progressLeft" style="{{#if progress}}width:{{ progress }}%;{{/if}}{{#if color}}background:{{ color }};{{/if}}"></div>
+                <div class="progressTitle"></div>
+            </div>
+        </div>
+    </div>
+</script>
+
+<script id="card-template" type="text/x-handlebars-template">
+	<div id="{{ id }}" class="card card-{{ recordtype }}{{ classmetadata }}">
+		<div class="remove-card"><i class="fa fa-times"></i></div>
+		<div class="inner-card">
+			<div class="inner-card-subject">
+			    
+				{{#if assigneepicurl}}<div><div class="inner-card-picture"><img src="{{ assigneepicurl }}" /></div></div>{{/if}}
+				{{ subject }}
+			</div>
+			<div class="inner-card-toolbar">
+				<div class="inner-card-toolbar-workid"><i class="fa"></i>{{ worktitle }}</div>
+				{{#if numberOfDays }}<div>{{ numberOfDays }}d</div>{{/if}}
+				{{#if priority }}<div>{{ priority }}</div>{{/if}}
+				{{#if numberOfTasks }}<div>{{ numberOfTasks }} <i class="fa fa-check-square-o"></i></div>{{/if}}
+				{{#if numberOfPosts }}<div>{{  numberOfPosts }} <i class="fa fa-comment"></i></div>{{/if}}
+				{{#if scheduledBuild }}<div>{{ scheduledBuild }}</div>{{/if}}
+				{{#if points }}<div>{{  points }} pts</div>{{/if}}
+			</div>
+		</div>
+	</div>
+</script>
+
+<script id="backlog-dialog-worklist-template" type="text/x-handlebars-template">
+	<div class="backlogRow">
+		<div class="backlogCheckbox"><input type="checkbox" name="workList" id="work-{{ id }}" value="{{ id }}" /></div>
+		<div class="backlogWorkId"><label for="work-{{ id }}">{{ workId }}</label></div>
+		<div class="backlogSubject"><label for="work-{{ id }}">{{ workSubject }}</label></div>
+	</div>
+</script>
+
+<script>
+//calculate the nameSpace dynamically so the same code can work in and out of the package    
+var qualifiedName='{!$ObjectType.ADM_Work__c.Name}';
+var nameSpace = qualifiedName.substring(0,qualifiedName.indexOf('ADM_Work__c')); 
+
+var initKanban = "{!JSENCODE(columnsAndWorksAsJSON)}";
+var columnTemplate = Handlebars.compile($("#column-template").html());
+var cardTemplate = Handlebars.compile($("#card-template").html());
+var backlogWorkListTemplate = Handlebars.compile($("#backlog-dialog-worklist-template").html());
+var filterSettingsTemplate = Handlebars.compile($("#filter-settings-template").html());
+
+var workStatuses = "{!JSENCODE(workStatus)}";
+var columnSettingsTemplate = Handlebars.compile($("#column-settings-template").html());
+var statusTemplate = Handlebars.compile($("#status-template").html());
+var worksWithNullColumns = [];
+var errorDialog;
+var changeMade = false;
+
+// SETTINGS
+function kanbanSettings(children,parentId) {
+	
+
+    if (isObject(children) && children.length > 0) {
+        for (var i = 0; i < children.length; i++) {
+            var column = children[i];
+            var columnId = column.column.Id;
+            var columnLevel = column.column[nameSpace + 'Level__c'];
+            var columnPosition = column.column[nameSpace + 'Position__c'];
+            var statusMap = column.columnWorkStatusMap;
+            var orderedStatuses = column.orderedWorkStatusIds;
+
+            if (columnLevel != prevLevel) {
+                $('#' + parentId).append('<div class="containerColumns" id="settings-parent-' + parentId + '-row-' + columnLevel + '"></div>');
+            }
+            var prevLevel = columnLevel;
+            
+            var numberOfChildren = 0;
+            if (isObject(column.children)) {
+                numberOfChildren = column.children.length;
+            }
+
+            var wipLimit = null;
+            if (column.column[nameSpace + 'Max_Number_of_Records__c'] > 0) {
+                wipLimit = column.column[nameSpace + 'Max_Number_of_Records__c'];
+            }
+            
+            var statuses = "", statusIds = "";
+            if (isObject(statusMap)) {
+                for(var index=0; index<Object.keys(orderedStatuses).length; index++){
+                    statuses +=  statusMap[orderedStatuses[index]] + ', ';
+                    statusIds += orderedStatuses[index] + ',';
+                    
+                } 
+                statuses = statuses.slice(0, statuses.lastIndexOf(', '));
+                statusIds = statusIds.slice(0, statusIds.lastIndexOf(','));
+            }
+            
+            isSwimlane = false;
+            if (columnLevel > 0) {
+                isSwimlane = true;
+            }
+
+            var columnContents = $('#settings-parent-' + parentId + '-row-' + columnLevel).append(columnSettingsTemplate({
+                    wipLimit:wipLimit,
+                    title:column.columnName,
+                    id:columnId,
+                    parent:column.parentId,
+                    numberOfWork:column.workItems.length,
+                    numberOfChildren:numberOfChildren,
+                    statuses:statuses,
+                    statusIds:statusIds,
+                    level:columnLevel,
+                    position:columnPosition,
+                    isSwimlane:isSwimlane
+                }));
+
+            kanbanSettings(column.children,'settings-' + columnId);
+        }
+    }
+}
+
+function populateColumnsDropdown(children,newLevel) {
+	
+    
+    if (isObject(children) && children.length > 0) {
+        for (var i = 0; i < children.length; i++) {
+	        var numberOfChildren = 0;
+            var column = children[i];
+            var columnId = column.column.Id;
+            var columnLevel = column.column[nameSpace + 'Level__c'];
+            var columnName = column.columnName;
+            var closedStatusColumn = isClosedStatusColumn(column.columnWorkStatusMap);
+
+            if(!closedStatusColumn){
+				var numberOfChildren = 0;
+	            if (isObject(column.children)) {
+	                numberOfChildren = column.children.length;
+	            }
+
+				/*
+				console.log(columnName);
+	            console.log("newLevel: " + newLevel);
+				console.log("i: " + i);
+	            console.log("length: " + children.length);
+	            console.log("numberOfChildren: " + numberOfChildren);
+	            console.log(" ");
+	            */
+	            
+				if (numberOfChildren === 0) {
+					$('#backlogDialog select').append('<option value="' + columnId + '">' + columnName + '</option>');
+				}
+
+	            newLevel += 1;
+	            populateColumnsDropdown(column.children,newLevel);
+			}
+        }
+    }
+}
+
+function isClosedStatusColumn(columnWorkStatusMapToCheck) {
+	var foundClosedStatus = false;
+	if(columnWorkStatusMapToCheck){
+		for(key in columnWorkStatusMapToCheck) {
+			if(columnWorkStatusMapToCheck[key] == 'Closed'){
+				foundClosedStatus = true;
+				break;
+			}
+		}
+	}
+	
+	return foundClosedStatus;
+}
+
+
+function populateStatuses(obj) {
+	var orderedStatuses = obj.orderedWorkStatuses;
+	var statusNameToIdMap = obj.workStatusNameToId;
+	var totalStatuses = Object.keys(orderedStatuses).length;
+	var num = 0;
+	for (var count =0; count< totalStatuses; count++) {
+		var selectedColumn = "#statusMappingHolder1";
+		if (count >= (totalStatuses / 2)) {
+			selectedColumn = "#statusMappingHolder2";
+		}
+		$(selectedColumn).append(statusTemplate({
+			num:count,
+			label:orderedStatuses[count],
+			value:statusNameToIdMap[orderedStatuses[count]]
+		}));
+	}
+}
+
+function processColumn(column) {
+	if ($('.settingsColumn.notcreated').length > 0 || changeMade) {
+		if (confirm('You are about to select another column without saving. Click OK to confirm or CANCEL to continue editing new column.')) {
+			changeMade = false;
+		} else {
+			return;
+		}
+	}
+
+	var titleText = column.data('title');
+	var wipLimitText = column.data('wiplimit');
+	var currentStatuses = column.data('statusids');
+	
+	$('#typeUpdate,#typeSibling,#typeChild').removeAttr('disabled');
+	$('#typeSwimlane').attr('disabled','disabled'); // disable swimlane once a column has been selected (for now)
+
+	$('.settingsColumn').removeClass('highlight');
+	$('.notcreated').remove();
+	column.addClass('highlight');
+	$('#propertyPanel input[type=radio]').prop('checked',false);
+	$('.propertyFormOptions').css('visibility','hidden');
+	$('button#saveButton').hide();
+	displaySettingsError(null);
+}
+
+function realtimeUpdate() {
+	changeMade = true;
+	var newBoxName = $('.settingsColumn.highlight > .holderTitle > .titleText > .titleOnly');
+	if ($('#columnName').val() == '') {
+		newBoxName.text('?');
+	} else {
+		newBoxName.text($('#columnName').val());
+	}
+	if ($('#columnName').val().length > 0) {
+		$('button#saveButton').show();
+		$('button#saveButton,button#updateButton').removeAttr('disabled');
+	} else {
+		$('button#saveButton').hide();
+		$('button#saveButton,button#updateButton').attr('disabled','disabled');
+	}
+
+	var newBoxWipLimit = $('.settingsColumn.highlight > .holderTitle > .titleText > .progressTitle');
+	var wipLimit = parseInt($('#wipLimit').val(),10);
+	if (wipLimit > 0) {
+		newBoxWipLimit.text(wipLimit).show();
+	} else {
+		wipLimit = '';
+		newBoxWipLimit.text(wipLimit).hide();
+	}
+
+	var newStatuses = $('.settingsColumn.highlight > .holderTitle > .statusesText');
+	var statuses = '';
+	$('.statusMapping:checked').each(function(index) {
+		statuses += $(this).next('label').text().trim();
+		if ($('.statusMapping:checked').length > 1 && index !== $('.statusMapping:checked').length-1) {
+			statuses += ', ';
+		}
+	});
+	newStatuses.text(statuses);
+}
+
+function actionSelected(selected) {
+	var originalColumn = $('.settingsColumn.highlight');
+	var isUpdate = (selected.value === 'update');
+	var isSibling = (selected.value === 'sibling');
+	var isChild = (selected.value === 'child');
+	var isSwimlane = (selected.value === 'swimlane');
+	changeMade = false;
+	
+	if (originalColumn.length != 1 && isSwimlane == false) {
+		// must select a column first
+		displaySettingsError('Please select a column first');
+		return;
+	}
+	
+	$('button#saveButton span').text('Save');
+	$('.propertyFormOptions').css('visibility','visible');
+	$('.statusMapping').prop('checked',false);
+	displaySettingsError(null);
+
+	if (isUpdate) {
+		$('button#saveButton').show();
+		$('button#saveButton,button#updateButton,button#removeColumn').removeAttr('disabled');
+		$('#wipLimit').val(originalColumn.data('wiplimit'));
+		$('#columnName').val(originalColumn.data('title')).focus();
+		var currentStatuses = originalColumn.data('statusids');
+		$('.statusMapping').each(function() {
+			var currentId = $(this).val();
+			if (currentStatuses && currentStatuses.indexOf(currentId) > -1) {
+				$(this).prop('checked',true);
+			}
+		});
+		var showRemoveButton = true;
+		/* is there work in that column? */
+		if (originalColumn.data('numberofwork') > 0) {
+			showRemoveButton = false;
+			$('#workExists').show();
+		} else {
+			$('#workExists').hide();
+		}
+		if (originalColumn.data('children') > 0) {
+			showRemoveButton = false;
+			$('#childrenExist').show();
+		} else {
+			$('#childrenExist').hide();
+		}
+		if (showRemoveButton) {
+			$('#removeColumnButton').show();
+		} else {
+			$('#removeColumnButton').hide();
+		}
+		$('#typeSwimlane').attr('disabled','disabled');
+		$('#editMode').text('Update:');
+		$('button#updateButton span').text('Update');
+		$('button#removeColumn span').text('Remove Column');
+	} else if (isSibling) {
+		$('button#saveButton').hide();
+		$('button#saveButton,button#updateButton').attr('disabled','disabled');
+		$('#typeUpdate,#typeChild,#typeSwimlane').attr('disabled','disabled');
+		$('#wipLimit').val(null);
+		$('#columnName').val(null).focus();
+		originalColumn.removeClass('highlight').after(columnSettingsTemplate({ title:'?' }));
+		var newColumn = originalColumn.next('.settingsColumn');
+		newColumn.addClass('highlight notcreated');
+		if (originalColumn.hasClass('settingsSwimlane')) {
+			newColumn.addClass('settingsSwimlane');
+		}
+		$('#editMode').text('Create Sibling next to ' + originalColumn.data('title') + ':');
+		$('button#updateButton span').text('Save Sibling');
+		$('#workExists,#childrenExist').hide();
+		$('#removeColumnButton').show();
+		$('button#removeColumn').removeAttr('disabled');
+		$('button#removeColumn span').text('Cancel');
+	} else if (isChild) {
+		$('button#saveButton').hide();
+		$('button#saveButton,button#updateButton').attr('disabled','disabled');
+		$('#typeUpdate,#typeSibling,#typeSwimlane').attr('disabled','disabled');
+		$('#wipLimit').val(null);
+		$('#columnName').val(null).focus();
+		if (originalColumn.find('> .containerColumns').length === 0) {
+			originalColumn.append('<div class="containerColumns"></div>');
+		}
+		originalColumn.removeClass('highlight').find('> .containerColumns').append(columnSettingsTemplate({ title:'?' }));
+		var newColumn = originalColumn.find('> .containerColumns > .settingsColumn:last-child');
+		newColumn.addClass('highlight notcreated');
+		$('#editMode').text('Create Child under ' + originalColumn.data('title') + ':');
+		$('#updateButton span').text('Save Child');
+		$('#workExists,#childrenExist').hide();
+		$('#removeColumnButton').show();
+		$('button#removeColumn span').text('Cancel');
+	} else if (isSwimlane) {
+		$('.settingsColumn.highlight').removeClass('highlight notcreated');
+		$('button#saveButton').hide();
+		$('button#saveButton,button#updateButton').attr('disabled','disabled');
+		$('#typeUpdate,#typeSibling,#typeChild').attr('disabled','disabled');
+		$('#wipLimit').val(null);
+		$('#columnName').val(null).focus();
+		$('#kanbanSettingsContents').append('<div class="containerColumns"></div>');
+		$('#kanbanSettingsContents > .containerColumns:last-child').append(columnSettingsTemplate({ title:'?' }));
+		var newColumn = $('#kanbanSettingsContents > .containerColumns:last-child > .settingsColumn');
+		newColumn.addClass('highlight settingsSwimlane notcreated');
+		$('#editMode').text('Create Swimlane:');
+		$('#updateButton span').text('Save Swimlane');
+		$('#workExists,#childrenExist').hide();
+		$('#removeColumnButton').show();
+		$('button#removeColumn span').text('Cancel');
+	}
+}
+
+function columnUpdate() {
+	displaySettingsError(null);
+	var statusIds = '';
+	var statuses = '';
+	var columnWorkStatusMap = {};
+	var isUpdate   = $('#typeUpdate').is(':checked');
+	var isChild    = $('#typeChild').is(':checked');
+	var isSibling  = $('#typeSibling').is(':checked');
+	var isSwimlane = $('#typeSwimlane').is(':checked');
+
+	if (!isUpdate && !isChild && !isSibling && !isSwimlane) {
+		// must select a column first
+		displaySettingsError('Please select an action first');
+		return;
+	}
+
+	if ($('.settingsColumn').length == 1) {
+		// cannot remove the last column
+		displaySettingsError('You cannot delete the last column');
+		return;
+	}
+
+	$('button#updateButton,button#saveButton').attr('disabled','disabled');
+
+	// Grab values from form
+	var originalColumn = $('.settingsColumn.highlight');
+	var title = $('#columnName').val();
+	var wipLimit = parseInt($('#wipLimit').val(),10);
+	wipLimit = (wipLimit > 0) ? wipLimit : null;
+	$('.statusMapping:checked').each(function(index) {
+		// for object
+		var objectStatusIds = $(this).val();
+		var objectStatuses = $(this).next('label').text().trim();
+		columnWorkStatusMap[objectStatusIds] = objectStatuses;
+		// for DOM
+		statusIds += objectStatusIds;
+		statuses += objectStatuses;
+		if ($('.statusMapping:checked').length > 1 && index !== $('.statusMapping:checked').length-1) {
+			statusIds += ',';
+			statuses += ', ';
+		}
+	});
+
+	if (isUpdate) {
+		// UPDATE
+		var id = originalColumn.data('id');
+		var parentColumn = originalColumn.closest('.settingsColumn:not(.highlight)');
+		if (parentColumn.length > 0) {
+			var parent = parentColumn.data('id');
+		} else {
+			var parent = null;
+		}
+		var level = originalColumn.attr('level');
+		var position = originalColumn.attr('position');
+		// update DOM data
+		originalColumn.data('title',title).attr('data-title',title);
+		originalColumn.data('level',level).attr('data-level',level);
+		originalColumn.data('position',position).attr('data-position',position);
+		originalColumn.data('wiplimit',wipLimit).attr('data-wiplimit',wipLimit);
+		originalColumn.data('statusids',statusIds).attr('data-statusids',statusIds);
+		console.log('UPDATE: Saving change...');
+	} else if (isSibling) {
+		// SIBLING
+		var id = null;
+		var parent = null;
+		if (originalColumn.hasClass('settingsSwimlane')) {
+			var level = originalColumn.siblings('.settingsColumn:first-child').data('level');
+		} else {
+			var parentColumn = originalColumn.closest('.settingsColumn:not(.highlight)');
+			var level = 0;
+			if (parentColumn.length > 0) {
+				parent = parentColumn.data('id');
+			}
+		}
+		var position = originalColumn.index();
+		// update DOM data
+		originalColumn.data('title',title).attr('data-title',title);
+		originalColumn.data('level',level).attr('data-level',level);
+		originalColumn.data('position',position).attr('data-position',position);
+		originalColumn.data('wiplimit',wipLimit).attr('data-wiplimit',wipLimit);
+		originalColumn.data('statusids',statusIds).attr('data-statusids',statusIds);
+		console.log('SIBLING: Saving change...');
+	} else if (isChild) {
+		// CHILD
+		var id = null;
+		var parentColumn = originalColumn.closest('.settingsColumn:not(.highlight)');
+		var parent = parentColumn.data('id');
+		var level = 0;
+		var position = originalColumn.siblings('.settingsColumn').length;
+		// update DOM data
+		originalColumn.data('title',title).attr('data-title',title);
+		originalColumn.data('level',level).attr('data-level',level);
+		originalColumn.data('position',position).attr('data-position',position);
+		originalColumn.data('wiplimit',wipLimit).attr('data-wiplimit',wipLimit);
+		originalColumn.data('statusids',statusIds).attr('data-statusids',statusIds);
+		console.log('CHILD: Saving change...');
+	} else if (isSwimlane) {
+		// SWIMLANE
+		var id = null;
+		var parent = null;
+		var level = $('#kanbanSettingsContents > .containerColumns').length;
+		var position = 0;
+		// update DOM data
+		originalColumn.data('title',title).attr('data-title',title);
+		originalColumn.data('level',level).attr('data-level',level);
+		originalColumn.data('position',position).attr('data-position',position);
+		originalColumn.data('wiplimit',wipLimit).attr('data-wiplimit',wipLimit);
+		originalColumn.data('statusids',statusIds).attr('data-statusids',statusIds);
+		console.log('CHILD: Saving change...');
+	} else {
+		return false;
+	}
+
+	// update object to be sent
+	var columns = [];
+	columns.push({column:{
+		Id:id,
+		Name:title,
+		Parent_Column__c:parent,
+		Team__c:'{!teamId}',
+		Level__c:level,
+		Position__c:position,
+		Max_Number_of_Records__c:wipLimit
+	}, columnWorkStatusMap: columnWorkStatusMap })
+
+	//processColumn(newColumn); // This is good, but if an error occurs, it won't have form data still filled in...
+	
+	//prevSaveText = $('#updateButton span').text();
+	//$('#updateButton span').text('Saving...');
+	$('button#saveButton span').text('Saving...');
+    $('#settingsDialog').addClass('boardloading');
+    $('.propertyFormOptions').css('visibility','hidden');
+
+	console.log(columns);
+    Visualforce.remoting.Manager.invokeAction('{!$RemoteAction.ADM_KanbanBoardController.saveColumns}', columns, function(result, event) {
+        if (event.status) {
+            // Save good, assign ID, clear errors
+            console.log('Save good!');
+            displaySettingsError(null);
+            $('button#saveButton').hide();
+			//$('#updateButton span').text('Saved!');
+            originalColumn.removeClass('notcreated').attr('id','column-' + result.newColumnId).data('id',result.newColumnId).attr('data-id',result.newColumnId);
+            //setTimeout(function() {
+			//	$('.propertyFormOptions').css('visibility','hidden');
+			//	$('#propertyPanel input[type=radio]').prop('checked',false).removeAttr('disabled');
+			//}, 2000);
+			refreshSettings();
+			//$('#propertyPanel input[type=radio]').prop('checked',false).removeAttr('disabled');
+        } else if (event.type === 'exception') {
+			// Save bad, remove new div, show old div
+            console.warn('Error during save, reverting move.');
+	        $("#settingsDialog").removeClass('boardloading');
+	        $('.propertyFormOptions').css('visibility','visible');
+	        $('button#updateButton,button#saveButton,button#removeColumn').removeAttr('disabled');
+            displaySettingsError(event.message);
+            $('button#saveButton span').text('Save');
+            //$('#updateButton span').text(prevSaveText);
+		}
+	});
+}
+
+function columnRemove() {
+	var originalColumn = $('.settingsColumn.highlight');
+	var newColumn = $('.settingsColumn.notcreated');
+	var isUpdate   = $('#typeUpdate').is(':checked');
+	var isChild    = $('#typeChild').is(':checked');
+	var isSibling  = $('#typeSibling').is(':checked');
+	var isSwimlane = $('#typeSwimlane').is(':checked');
+	var columns = [];
+
+	if (isUpdate) {
+		var parentColumn = originalColumn.closest('.settingsColumn:not(.highlight)');
+        if (parentColumn.length > 0) {
+            var parent = parentColumn.data('id');
+        } else {
+            var parent = null;
+        };
+        columns.push({column:{ Id:originalColumn.data('id'), Active__c:false, Parent_Column__c:parent, Team__c:'{!teamId}', Level__c:originalColumn.data('level'), Position__c:originalColumn.data('position')  }, columnWorkStatusMap:null});
+		originalColumn.addClass('remove');
+		//$('button#removeColumn span').text('Removing...');
+	} else if (isSibling) {
+		var prevColumn = newColumn.prev('.settingsColumn');
+		newColumn.remove();
+		processColumn(prevColumn);
+		return;
+	} else if (isChild) {
+		var prevColumn = newColumn.closest('.settingsColumn:not(.highlight)');
+		newColumn.remove();
+		processColumn(prevColumn);
+		return;
+	} else if (isSwimlane) {
+		newColumn.remove();
+		$('button#saveButton').hide();
+	    $('.propertyFormOptions').css('visibility','hidden');
+		$('#propertyPanel input[type=radio]').prop('checked',false).removeAttr('disabled');
+		return;
+	}
+	
+	$('button#saveButton').hide();
+	$('button#updateButton,button#saveButton,button#removeColumn').attr('disabled','disabled');
+    $("#settingsDialog").addClass('boardloading');
+    $('.propertyFormOptions').css('visibility','hidden');
+	$('#propertyPanel input[type=radio]').prop('checked',false).removeAttr('disabled');
+
+	console.log(columns);
+    Visualforce.remoting.Manager.invokeAction('{!$RemoteAction.ADM_KanbanBoardController.saveColumns}', columns, function(result, event) {
+        if (event.status) {
+			$('#typeUpdate,#typeChild,#typeSibling,#typeSwimlane').prop('checked',false);
+            $('.settingsColumn.remove').remove();
+			displaySettingsError(null);
+			//$('button#removeColumn span').text('Removed!');
+			$('button#removeColumn').removeAttr('disabled');
+			//setTimeout(function() {
+	        //    processColumn($('#kanbanContents .settingsColumn:first'));
+			//}, 2000);
+            console.log('Column removed');
+			refreshSettings();
+        } else if (event.type === 'exception') {
+	        $("#settingsDialog").removeClass('boardloading');
+			processColumn($('.settingsColumn.remove'));
+			$('#typeUpdate').prop('checked',true);
+			$('button#saveButton').hide();
+			$('button#updateButton,button#saveButton,button#removeColumn').removeAttr('disabled');
+			//$('button#removeColumn span').text('Remove Column');
+            $('.settingsColumn.remove').removeClass('remove').addClass('highlight');
+			$('.propertyFormOptions').css('visibility','visible');
+            displaySettingsError(event.message);
+            console.warn('Error during remove. Reverting.');
+		}
+	});
+}
+
+
+function displaySettingsError(message) {
+	if (message == null) {
+		$('#settingsDialog .ui-dialog-error').html(null).hide();
+	} else {
+		$('#settingsDialog .ui-dialog-error').html(trimErrorMessage(message)).show();
+	}
+}
+
+function displayBacklogDialogError(message) {
+	if (message == null) {
+		$('#backlogDialog .ui-dialog-error').html(null).hide();
+	} else {
+		$('#backlogDialog .ui-dialog-error').html('Transaction rolled back: ' + trimErrorMessage(message)).show();
+	}
+}
+
+function trimErrorMessage(errorMessage) {
+	var returnMessage = errorMessage.replace('FIELD_CUSTOM_VALIDATION_EXCEPTION, ','');
+	returnMessage = returnMessage.replace(': []','');
+	if (returnMessage.indexOf('first error:') > -1) {
+	    return returnMessage.substring(returnMessage.indexOf('first error:')+12).trim();
+	} else {
+	    return returnMessage.substring(returnMessage.indexOf(':')+1).trim();
+	}
+}
+
+//-----------------------------------------------------------------------------------------------
+// UPDATE COLUMNS
+//-----------------------------------------------------------------------------------------------
+function updateColumnCounts() {
+	//console.log('Updating column counts');
+    $('.holderContents').each(function(key, value ) {
+        var countTitle = $(this).find('span.progressTitle');
+        var percentageBackground = $(this).find('.progressLeft');
+        var newCount = $(this).find('.card').length;
+        var maxCount = 0;
+        if ($(this).find('.holderContents').length > 0) {
+            // children
+            $(this).find('.holderContents').each(function(){
+                maxCount += parseInt($(this).attr('data-max'),10);
+            });
+        } else {
+            maxCount = $(this).attr('data-max');
+        }
+        
+        if (maxCount > 0) {
+	        $(this).find('span.progressTitle').show();
+	        $(this).find('div.progress').show();
+        } else {
+	        $(this).find('span.progressTitle').hide();
+	        $(this).find('div.progress').hide();
+        }
+        
+        var percentage = Math.round(newCount/maxCount*100);
+        if (percentage >= 100) { percentage = 100; }
+        var newTitle = newCount + '&nbsp;/&nbsp;' + maxCount; //+ ' (' + percentage + '%)';
+        countTitle.html(newTitle);
+        if (percentage < 40) {
+            percentageBackground.css('background','#0BAA0B').css('width',percentage + '%');
+        } else if (percentage >= 40 && percentage < 70) {
+            percentageBackground.css('background','#B3AB00').css('width',percentage + '%');
+        } else if (percentage >= 70 && percentage < 90) {
+            percentageBackground.css('background','#DD5000').css('width',percentage + '%');
+        } else if (percentage > 90) {
+            percentageBackground.css('background','#830000').css('width',percentage + '%');
+        }
+    });
+    resizeColumnHeights();
+}
+
+
+function resizeContainer() {
+	//console.log('Resizing container');
+	var offsetTopBottom = 235;
+	var offsetLeftRight = 44;
+	
+	$('#kanbanContainer').height($(window).height() - offsetTopBottom);
+	if ($('html').hasClass('fullscreen')) {
+		if ($('#filterDialog').hasClass('opened')) {
+			$('#kanbanContainer').width($(window).width() - 200).css('margin-left','200px');
+			$('#kanbanContainer').height($(window).height());
+			$('#kanbanContents').height($(window).height() - $('#containerToolbar').outerHeight());
+			$('#filterDialog').height($('#kanbanContents').height()).css('top', $('#kanbanContainer').offset().top + 'px');;
+		} else {
+			$('#kanbanContainer').width($(window).width());
+			$('#kanbanContainer').height($(window).height());
+			$('#kanbanContents').height($(window).height() - $('#containerToolbar').outerHeight());
+			$('#filterDialog').height($('#kanbanContents').height()).css('top', $('#kanbanContainer').offset().top + 'px');;
+		}
+	} else {
+		if ($('#filterDialog').hasClass('opened')) {
+			$('#kanbanContainer').width($(window).width() - offsetLeftRight - 200).css('margin-left','200px');
+			$('#kanbanContainer').height($(window).height() - offsetTopBottom);
+			$('#kanbanContents').height($(window).height() - offsetTopBottom);
+			$('#filterDialog').height($('#kanbanContents').height() + 24).css('top', $('#kanbanContainer').offset().top + 'px');
+		} else {
+			$('#kanbanContainer').width($(window).width() - offsetLeftRight).css('margin-left','0px');
+			$('#kanbanContainer').height($(window).height() - offsetTopBottom);
+			$('#kanbanContents').height($(window).height() - offsetTopBottom);
+			$('#filterDialog').height($('#kanbanContents').height() + 24).css('top', $('#kanbanContainer').offset().top + 'px');
+		}
+	}
+	resizeColumnHeights();
+}
+
+function resizeColumnHeights() {
+    //console.log('Resizing column heights');
+    
+    // set height on all kanban related items to AUTO. from there we have a baseline to make adjustments to equalize columns, etc.
+    $('.containerColumns,.holderContents,.holderWork').css('height','auto');
+    
+    
+    // determine if all rows are higher than overall contents. if not, make last row higher to cover difference
+    var allRowsHeights = 0;
+    $('#kanbanContents > div.containerColumns').each(function() {
+	    allRowsHeights += $(this).outerHeight();
+    });
+    
+    if ($('#kanbanContents').outerHeight() > allRowsHeights) {
+	    var lastRowHeightOffset = $('#kanbanContents').outerHeight() - allRowsHeights;
+	    $('#kanbanContents > .containerColumns:last-child').height($('#kanbanContents > .containerColumns:last-child').outerHeight() + lastRowHeightOffset);
+    }
+
+    // find the bottom most table in a column, that will be the table that'll need height adjustment to the end of the column to make up for the potential gap
+    $('.containerColumns > .holderContents').find('.containerColumns:last').each(function(){
+            var parent = $(this).parents('.holderContents:last');
+            if ($(parent).length > 0) {
+            
+                // add up all children elements heights within a column so they can be taken out of the equation
+                var parentDirectChildrenHeights = 0;
+                $(this).parents('.holderContents:last').find('> div').each(function() {
+                    parentDirectChildrenHeights += $(this).outerHeight();
+                });
+                
+                // make the new height of the table the height of the parent minus all the parents childrens elements
+                var newHeight = $(this).height() + (parent.outerHeight() - parentDirectChildrenHeights);
+                $(this).height(newHeight).css('border-right','0px');
+            }
+    });
+    
+    // equalize the holder to it's respective parents, which contains the work items
+    $('.holderWork').each(function(){
+        var parentHeight = $(this).closest('.holderContents').outerHeight();
+        var titleHeight = $(this).siblings('.holderTitle').outerHeight();
+        var bottomPadding = parseInt($(this).css('padding-bottom'),10); // parseInt gets us just the integers
+        var bottomPadding = 0;
+        $(this).height(parentHeight - titleHeight - bottomPadding);
+    });
+}
+
+function resizeSettingsColumnHeights() {
+    console.log('Resizing settings column heights');
+    
+    // set height on all kanban related items to AUTO. from there we have a baseline to make adjustments to equalize columns, etc.
+    $('#settingsDialog .containerColumns,#settingsDialog .settingsColumn').css('height','auto');
+    
+    // find the bottom most table in a column, that will be the table that'll need height adjustment to the end of the column to make up for the potential gap
+    $('#settingsDialog .containerColumns > .settingsColumn').find('.containerColumns:last').each(function(){
+	    
+		console.log('1');
+		    
+            var parent = $(this).parents('.settingsColumn:last');
+            if (parent.length > 0) {
+                console.log('2');
+                // add up all children elements heights within a column so they can be taken out of the equation
+                var parentDirectChildrenHeights = 0;
+                $(this).parents('.settingsColumn:last').find('> div').each(function() {
+	                console.log('3');
+                    parentDirectChildrenHeights += $(this).outerHeight();
+                });
+                
+                console.log(parentDirectChildrenHeights);
+                
+                // make the new height of the table the height of the parent minus all the parents childrens elements
+                var newHeight = $(this).height() + (parent.outerHeight() - parentDirectChildrenHeights);
+                $(this).height(newHeight).css('border-right','0px');
+            }
+    });
+}
+
+function refreshBoard() {
+	console.log('Refreshing board');
+	$('#kanbanContainer').addClass('boardloading');
+    Visualforce.remoting.Manager.invokeAction('{!$RemoteAction.ADM_KanbanBoardController.getColumnsAndWorksAsJSON}', '{!teamId}', function(result, event) {
+		if (event.status) {
+		    kanbanObject = (new Function('return ' + result))();
+			console.log(kanbanObject);
+		    
+			if (kanbanObject == null || kanbanObject == '') {
+				errorDialog.html("No data returned from server. Please try your request again.").dialog({ title: "Error During Refresh" }).dialog("open");
+			} else {
+				$('#kanbanContents').html(null);
+				preFilterSettings();
+				kanban(kanbanObject,'kanbanContents');
+				postFilterSettings();
+				initSortable();
+				updateColumnCounts();
+				$('#kanbanContainer').removeClass('boardloading');
+			}
+		} else if (event.type === 'exception') {
+ 			$('#kanbanContainer').removeClass('boardloading');
+			console.error(event.message);
+			errorDialog.html("Bad data returned from server: " + event.message).dialog({ title: "Error During Refresh" }).dialog("open");
+		}
+    },{ escape:false });
+}
+
+function refreshSettings() {
+	console.log('Refreshing settings...');
+    $("#settingsDialog").addClass('boardloading');
+    Visualforce.remoting.Manager.invokeAction('{!$RemoteAction.ADM_KanbanBoardController.getColumnsAndWorksAsJSON}', '{!teamId}', function(result, event) {
+		if (event.status) {
+		    kanbanObject = (new Function('return ' + result))();
+			console.log(kanbanObject);
+		    
+			if (kanbanObject == null || kanbanObject == '') {
+				errorDialog.html("No data returned from server. Please try your request again.").dialog({ title: "Error During Refresh" }).dialog("open");
+			} else {
+				$("#settingsDialog .containerColumns").remove(); // removes all HTML, not using .html(null) because loader stuff is inside DOM
+				kanbanSettings(kanbanObject,'kanbanSettingsContents');
+				//processColumn($('#kanbanContents .settingsColumn:first'));
+				$('#settingsDialog').removeClass('boardloading');
+				$('#typeUpdate,#typeSibling,#typeChild,#typeSwimlane').removeAttr('disabled').prop('checked',false);
+				$('.propertyFormOptions').css('visibility','hidden');
+				changeMade = false;
+			}
+		} else if (event.type === 'exception') {
+ 			$('#kanbanContainer').removeClass('boardloading');
+			console.error(event.message);
+			//errorDialog.html("Bad data returned from server: " + event.message).dialog({ title: "Error During Refresh" }).dialog("open");
+		}
+    },{ escape:false });
+}
+
+//-----------------------------------------------------------------------------------------------
+// FILTER
+//-----------------------------------------------------------------------------------------------
+var previouslyChecked = []; // For previously checked filters
+
+$(document).on('click','.itemList input[type=checkbox]', function(e) {
+	// Allow only one checkbox to be checked at a time
+	$(this).closest('.itemList').find('input[type=checkbox]:not([id=' + $(this).attr('id') + '])').prop('checked', false);
+	updateFilter();
+});
+
+function updateFilter() {
+	$('.card').hide();
+	var className = '';
+
+	$('#filterDialog input[type=checkbox]').each(function(index) {
+		if ($(this).is(':checked')) {
+			className += '.card-' + $(this).val();
+		}
+	});
+	
+	// Search:
+	if ($('#filterSearch').val().length > 0) {
+		className += '.card:icontains("' + $('#filterSearch').val() + '")'
+	}
+
+	if (className.length === 0) {
+		var numAllCards = $('.card').length;
+		$('#filterResults').text('Showing all ' + numAllCards + ' cards');
+		$('.card').show();
+	} else {
+		var numAllCards = $('.card').length;
+		var numSelectedCards = $(className).length;
+		$('#filterResults').text('Showing ' + numSelectedCards + ' of ' + numAllCards + ' cards');
+		//console.log('Showing: ' + className);
+		$(className).show();
+	}
+	resizeColumnHeights();
+}	
+
+jQuery.expr[":"].icontains = jQuery.expr.createPseudo(function (arg) {                                                                                                                                                                
+    return function (elem) {                                                            
+        return jQuery(elem).text().toUpperCase().indexOf(arg.toUpperCase()) >= 0;        
+    };                                                                                  
+});
+
+function preFilterSettings() {
+	// remember what things are already checked off
+	previouslyChecked = [];
+	$('.itemList input[type=checkbox]:checked').each(function(index) {
+		previouslyChecked.push($(this).attr('id'));
+	});
+
+	$('#filterBoxRecordTypes,#filterBoxThemes,#filterBoxEpics,#filterBoxAssignees,#filterBoxQEs').empty();
+}
+
+
+function asc_sort(a, b){
+    return ($(b).find('label').text()) < ($(a).find('label').text()) ? 1 : -1;    
+}
+
+function postFilterSettings() {
+	if ($("#filterBoxRecordTypes > .itemRow").length > 0) {
+		$("#filterBoxRecordTypes > .itemRow").sort(asc_sort).appendTo('#filterBoxRecordTypes');
+		$("#filterRecordTypes").show();
+	} else {
+		$("#filterRecordTypes").hide();
+	}
+	if ($("#filterBoxThemes > .itemRow").length > 0) {
+		$("#filterBoxThemes > .itemRow").sort(asc_sort).appendTo('#filterBoxThemes');
+		$("#filterThemes").show();
+	} else {
+		$("#filterThemes").hide();
+	}
+	if ($("#filterBoxEpics > .itemRow").length > 0) {
+		$("#filterBoxEpics > .itemRow").sort(asc_sort).appendTo('#filterBoxEpics');
+		$("#filterEpics").show();
+	} else {
+		$("#filterEpics").hide();
+	}
+	if ($("#filterBoxAssignees > .itemRow").length > 0) {
+		$("#filterBoxAssignees > .itemRow").sort(asc_sort).appendTo('#filterBoxAssignees');
+		$("#filterAssignees").show();
+	} else {
+		$("#filterAssignees").hide();
+	}
+	if ($("#filterBoxQEs > .itemRow").length > 0) {
+		$("#filterBoxQEs > .itemRow").sort(asc_sort).appendTo('#filterBoxQEs');
+		$("#filterQEs").show();
+	} else {
+		$("#filterQEs").hide();
+	}
+	$('#filterResults').text('Showing all ' + $('.card').length + ' cards');
+	
+	if ($.isArray(previouslyChecked)) {
+		$.each(previouslyChecked, function(index, value) {
+			$('#' + value).prop('checked', true);
+		});
+	}
+	
+	updateFilter();
+}
+
+//-----------------------------------------------------------------------------------------------
+// SORTABLE
+//-----------------------------------------------------------------------------------------------
+
+function initSortable() {
+$(".holderWork").sortable({
+        containment: "#dragDropContainment",
+        connectWith: ".holderWork",
+        items: "> div.card",
+        dropOnEmpty: true,
+        distance: 20,
+        cursor:"move",
+        //cursorAt: { left:0 },
+        placeholder: {
+            element: function(clone, ui) {
+                return $('<div class="card placeholder">'+clone[0].innerHTML+'</div>');
+            },
+            update: function() {
+                return;
+            }
+        },
+        forcePlaceholderSize: true,
+        //tolerance: "pointer",
+        start: function(event, ui) {
+            clone = $(ui.item[0].outerHTML).clone();
+        },
+        stop: function(event, ui) {
+
+			var previousColumn = $(this);
+            var columnId = $(ui.item).closest('div.holderContents').attr('id');
+            var works = [];
+            $(ui.item).closest('div.holderWork').find('.card').each(function(index) {
+	            index += 1;
+	            //console.log('Column_Rank__c: ' + index + ', Id: ' + $(this).attr('id') + ', Column__c: ' + columnId + ', Subject__c: ' + $(this).find('.cardSubject').text().trim() );
+                works.push({ Id:$(this).attr('id'), Column__c: columnId, Column_Rank__c: index });
+            });
+
+			console.log('Saving change...');
+            Visualforce.remoting.Manager.invokeAction('{!$RemoteAction.ADM_KanbanBoardController.saveWorks}', works, false, function(result, event) {
+                if (event.status) {
+	                if (result && result.length > 0) {
+						result.forEach(function(messages){
+						if (messages.errorMessages && messages.errorMessages.length > 0) {
+								console.warn('Error during save, reverting move.');
+								previousColumn.sortable('cancel');
+								updateColumnCounts();
+				            	var displayErrorMessages = '';
+				            	messages.errorMessages.forEach(function(lines){
+					            	displayErrorMessages += '<li>' + lines + '</li>';
+					            });
+				            	errorDialog.html(displayErrorMessages).dialog({ title: "Error During Save" }).dialog("open");
+			            	}
+						});
+	                }
+                } else if (event.type === 'exception') {
+	                console.warn('Error during save, reverting move.');
+					previousColumn.sortable('cancel');
+	                errorDialog.html(trimErrorMessage(event.message)).dialog({ title: "Error During Save" }).dialog("open");
+	                updateColumnCounts();
+				}
+			});
+
+            updateColumnCounts();
+        }
+    }).disableSelection();
+}
+
+function requestFullscreen(elem) {
+    if (elem.requestFullscreen) {
+        elem.requestFullscreen();
+    } else if (elem.msRequestFullscreen) {
+        elem.msRequestFullscreen();
+    } else if (elem.mozRequestFullScreen) {
+        elem.mozRequestFullScreen();
+    } else if (elem.webkitRequestFullscreen) {
+        elem.webkitRequestFullscreen(Element.ALLOW_KEYBOARD_INPUT);
+    }
+}
+
+function exitFullscreen() {
+    if (document.exitFullscreen) {
+        document.exitFullscreen();
+    } else if (document.msExitFullscreen) {
+        document.msExitFullscreen();
+    } else if (document.mozCancelFullScreen) {
+        document.mozCancelFullScreen();
+    } else if (document.webkitExitFullscreen) {
+        document.webkitExitFullscreen();
+    }
+}
+
+function isObject(obj) {
+  return obj === Object(obj);
+}
+
+$(window).resize(resizeContainer);
+
+/*
+$(window).bind('keydown', function(event) {
+    if (event.ctrlKey || event.metaKey) {
+        switch (String.fromCharCode(event.which).toLowerCase()) {
+        case 'f':
+            event.preventDefault();
+            $('#buttonFilter').click();
+            if ($('#filterDialog').hasClass('opened')) {
+	            $('#filterSearch').focus();
+            }
+            break;
+        }
+    }
+});
+*/
+
+function kanban(children,parentId) {
+	
+    if (isObject(children) && children.length > 0) {
+        for (var i = 0; i < children.length; i++) {
+            var column = children[i];
+            var columnId = column.column.Id;
+            var columnLevel = column.column[nameSpace + 'Level__c'];
+            
+            if (columnLevel != prevLevel) {
+                $('#' + parentId).append('<div class="containerColumns" id="parent-' + parentId + '-row-' + columnLevel + '"></div>');
+            }
+            var prevLevel = columnLevel;
+            
+            max = column.column[nameSpace +'Max_Number_of_Records__c'];
+            var columnContents = $('#parent-' + parentId + '-row-' + columnLevel).append(columnTemplate({
+	                max:max,
+	                title:column.columnName,
+	                progress:0,
+	                id:columnId
+                }));
+            if (!isObject(column.children)) {
+                $('#' + columnId).append('<div class="holderWork"></div>');
+            }
+            
+            if (column.workItems) {
+                    // loop work
+                    column.workItems.forEach(function(workItem, index){
+                        if(workItem.needsColumnUpdate){
+                            worksWithNullColumns.push({ Id:workItem.workId, Column__c: columnId});
+                        }
+                        var numberOfDaysToDisplay = null;
+                        if(typeof workItem.columnIdToTimeSpent !== 'undefined' && typeof workItem.columnIdToTimeSpent[columnId]!== 'undefined'){
+                        	 numberOfDaysToDisplay = workItem.columnIdToTimeSpent[columnId].totalWorkDays;
+		                     if('No_History' == numberOfDaysToDisplay){
+		                        numberOfDaysToDisplay = null;
+		                      }
+                        }
+
+                        var classmetadata = '';
+						// Themes:
+						if (workItem.themeIdToNameMap !== null) {
+							$.each(workItem.themeIdToNameMap, function(key, value) {
+								classmetadata += ' card-theme-' + key;
+							});
+						}
+						
+						// Epics:
+						if (workItem.epicId !== null) {
+							classmetadata += ' card-epic-' + workItem.epicId;
+						}
+
+						// Builds:
+						if (workItem.scheduledBuild !== null) {
+							classmetadata += ' card-build-' + workItem.scheduledBuild.replace('.','');
+						}
+
+						// Assignees:
+						if (workItem.assigneeId !== null) {
+							classmetadata += ' card-assignee-' + workItem.assigneeId;
+						}
+
+						// QEs:
+						if (workItem.qeId !== null) {
+							classmetadata += ' card-qe-' + workItem.qeId;
+						}
+
+                        $('#' + columnId + ' .holderWork').append(cardTemplate({
+                            recordtype:workItem.recordType.replace(/\s/g, '').toLowerCase(),
+                            id:workItem.workId,
+                            worktitle:workItem.workTitle,
+                            assigneefullname:workItem.assigneeFullName,
+                            assigneeid:workItem.assigneeId,
+                            assigneepicurl:workItem.assigneePicUrl,
+                            subject:workItem.subject,
+                            numberOfPosts:workItem.numberOfPosts,
+                            priority:workItem.priority,
+                            scheduledBuild:workItem.scheduledBuild,
+                            numberOfDays:numberOfDaysToDisplay,
+                            classmetadata:classmetadata
+						}));
+						
+						// Record Types:
+						if ($('#filterBoxRecordTypes #item-' + workItem.recordType.replace(' ','').toLowerCase()).length === 0) {
+							$('#filterBoxRecordTypes').append(filterSettingsTemplate({
+								id: workItem.recordType.replace(' ','').toLowerCase(),
+								label: workItem.recordType
+							}));
+						}
+
+						// Themes:
+						if (workItem.themeIdToNameMap !== null) {
+							$.each(workItem.themeIdToNameMap, function(key, value) {
+								if ($('#filterBoxThemes #item-theme-' + key).length === 0) {
+									$('#filterBoxThemes').append(filterSettingsTemplate({
+										id: 'theme-' + key,
+										label: value
+									}));
+								}
+							});
+						}
+						
+						// Epics:
+						if (workItem.epicName !== null && $('#filterBoxEpics #item-epic-' + workItem.epicId).length === 0) {
+							$('#filterBoxEpics').append(filterSettingsTemplate({
+								id: 'epic-' + workItem.epicId,
+								label: workItem.epicName
+							}));
+						}
+
+						// Builds:
+						if (workItem.scheduledBuild !== null && $('#filterBoxBuilds #item-build-' + workItem.scheduledBuild.replace('.','')).length === 0) {
+							$('#filterBoxBuilds').append(filterSettingsTemplate({
+								id: 'build-' + workItem.scheduledBuild.replace('.',''),
+								label: workItem.scheduledBuild
+							}));
+						}
+
+						// Assignees:
+						if (workItem.assigneeId !== null && $('#filterBoxAssignees #item-assignee-' + workItem.assigneeId).length === 0) {
+							$('#filterBoxAssignees').append(filterSettingsTemplate({
+								id: 'assignee-' + workItem.assigneeId,
+								label: workItem.assigneeFullName
+							}));
+						}
+
+						// QEs:
+						if (workItem.qeId !== null && $('#filterBoxQEs #item-qe-' + workItem.qeId).length === 0) {
+							$('#filterBoxQEs').append(filterSettingsTemplate({
+								id: 'qe-' + workItem.qeId,
+								label: workItem.qeFullName
+							}));
+						}
+												
+						
+                    });
+                 
+            }
+            
+
+            kanban(column.children,columnId);
+        }
+    }
+}
+
+function removeCard(workId){
+	var workToRemoveColumn = [];
+	workToRemoveColumn.push({ Id:workId, Column__c: null});
+    $('#' + workId).hide();
+
+    Visualforce.remoting.Manager.invokeAction('{!$RemoteAction.ADM_KanbanBoardController.saveWorks}', workToRemoveColumn, false, function(result, event) {
+            if (event.status) {
+                // Remove work card
+                $('#' + workId).remove();
+                
+            } else if (event.type === 'exception') {
+                //console.error('Error during save of work item: ' + event.message);
+                $('#' + workId).show();
+            }
+            
+    });
+}
+
+function saveWorkWithNullColumns(){
+    if(worksWithNullColumns.length >0 ){
+        Visualforce.remoting.Manager.invokeAction('{!$RemoteAction.ADM_KanbanBoardController.saveWorks}', worksWithNullColumns, false, function(result, event) {
+                var data = result;
+                if (event.status) {
+                    // after
+                    
+                } else if (event.type === 'exception') {
+                    //console.error('Error during save of work item: ' + event.message);
+                }
+                
+        });
+    }
+}
+
+function showBox(box,tab) {
+	$('#backlogDialogHeader > ul.sTabs > li').removeClass('on');
+	$(tab).closest('li').addClass('on');
+	$('.workList').hide();
+	$(box).appendTo('#backlogDialog').show();
+	$('.workList:hidden').appendTo('#backlogDialog');
+	$('.workList input[type=checkbox]').prop('checked',false);
+}
+
+function resizeBacklogDialog() {
+    $('#backlogDialog .workList').css('height', ($('#backlogDialog').height() - $('#backlogDialogHeader').outerHeight(true) - 10) + 'px');
+}
+
+//-----------------------------------------------------------------------------------------------
+// INIT PAGE
+//-----------------------------------------------------------------------------------------------
+$(function() {
+	
+	// TODO: determine width of screen and show either 1100px or max width of screen
+
+    errorDialog = $("#errorDialog").dialog({
+        autoOpen: false,
+        resize: false,
+        width:300,
+        modal: true,
+        buttons: {
+            "OK": function() {
+                errorDialog.dialog("close");
+            }
+        }
+    });
+    
+	settingsDialog = $("#settingsDialog").dialog({
+        autoOpen: false,
+        resize: false,
+        width:1100,
+        modal: true,
+        title: "Settings",
+        buttons: {
+            "Save": {
+	            text: "Save",
+	            id: "saveButton",
+	            click: function() {
+	            	columnUpdate();
+				}
+            },
+            "Close": function() {
+                settingsDialog.dialog("close");
+            }
+        },
+        open: function(event, ui) {
+	        console.log('Opening settings dialog... refreshing data...');
+	        $('button#saveButton').hide();
+			refreshSettings();
+			changeMade = false;
+        },
+        close: function(event, ui) {
+	        refreshBoard();
+        },
+        beforeClose: function(event, ui) {
+	        if ($('.settingsColumn').hasClass('highlight') && $('#typeUpdate,#typeChild,#typeSibling,#typeSwimlane').is(':checked')) {
+				if (confirm('You are about to close settings without saving.\nClick OK to close or CANCEL to continue editing.')) {
+					$('#columnName').focus();
+				} else {
+					return false;
+				}
+	        }
+        }
+    });
+
+	backlogDialog = $("#backlogDialog").dialog({
+        autoOpen: false,
+        resize: false,
+        width:700,
+        height:500,
+        modal: true,
+        title: "Backlog",
+        buttons: {
+            "Save": {
+	            text: "Import",
+	            id: "backlogSaveButton",
+	            click: function() {
+	            	console.log('Import clicked');
+					$(this).addClass('dialogloading');
+			        displayBacklogDialogError(null);
+					resizeBacklogDialog();
+
+					$('button#backlogSaveButton,button#backlogCloseButton').attr('disabled','disabled')
+					$('button#backlogSaveButton span').text('Importing...');
+					
+					var works = [];
+					$('.workList input[type=checkbox]:checked').each(function(index) {
+						works.push({
+							Id: $(this).val(),
+							Column__c: $('#backlogColumnSelect').val()
+						});
+					});
+					
+					console.log(works);					
+
+					if (works.length > 0) {
+			            Visualforce.remoting.Manager.invokeAction('{!$RemoteAction.ADM_KanbanBoardController.saveWorks}', works, true, function(result, event) {
+			                if (event.status) {
+			                    console.log('Save good!');
+			                    backlogDialog.removeClass('dialogloading').dialog('close');
+
+			                    $('button#backlogSaveButton,button#backlogCloseButton').removeAttr('disabled');
+								$('button#backlogSaveButton span').text('Import');
+						        refreshBoard();
+
+			                } else if (event.type === 'exception') {
+				                console.warn('Error during save, reverting move.');
+				                //errorDialog.html(trimErrorMessage(event.message)).dialog({ title: "Error During Save" }).dialog("open");
+				                displayBacklogDialogError(event.message);
+				                resizeBacklogDialog();
+				                
+			                    backlogDialog.removeClass('dialogloading');
+			                    $('button#backlogSaveButton,button#backlogCloseButton').removeAttr('disabled');
+								$('button#backlogSaveButton span').text('Import');
+							}
+						});
+					} else {
+	                    backlogDialog.removeClass('dialogloading');
+	                    $('button#backlogSaveButton,button#backlogCloseButton').removeAttr('disabled');
+						$('button#backlogSaveButton span').text('Import');
+					}
+	            	
+				}
+            },
+            "Close": {
+	            text: "Close",
+	            id: "backlogCloseButton",
+	            click: function () {
+	                backlogDialog.dialog("close");
+	            }
+            }
+        },
+        open: function(event, ui) {
+	        $(this).addClass('dialogloading');
+	        showBox('#backlogDialogWorkList','#tabBacklog a'); // set tab default back to Backlog
+	        $('#backlogSaveButton').hide();
+	        $(this).find('select').empty();
+            $('#backlogDialog .workList').html('<div class="spacer"></div>');
+	        populateColumnsDropdown(kanbanObject,0);
+	        displayBacklogDialogError(null);
+			resizeBacklogDialog();
+	        var backLogCount = 100;
+	        var newWorkCount = 100;
+			Visualforce.remoting.Manager.invokeAction('{!$RemoteAction.ADM_KanbanBoardController.getNewAndBacklogWorks}', '{!teamId}', backLogCount, newWorkCount, function(result, event) {
+				if (event.status) {
+					$(backlogDialog).removeClass('dialogloading');
+					console.log(result);
+					
+					// backlog
+					if (result.backLogWorks.length > 0) {
+						$.each(result.backLogWorks, function(index, value) {
+							$('#backlogDialogWorkList').append(backlogWorkListTemplate({
+				                id:value.Id,
+				                workId:value.Name,
+				                workSubject:value[nameSpace + 'Subject__c'],
+				                recordType:value.RecordType.Name
+							}));
+						});
+					} else {
+						$('#backlogDialogWorkList .spacer').html('<br/>No results found');
+					}
+					
+					// recent
+					if (result.recentNewWorks.length > 0) {
+						$.each(result.recentNewWorks, function(index, value) {
+							$('#backlogDialogRecentWorkList').append(backlogWorkListTemplate({
+				                id:value.Id,
+				                workId:value.Name,
+				                workSubject:value[nameSpace + 'Subject__c'],
+				                recordType:value.RecordType.Name
+							}));
+						});
+					} else {
+						$('#backlogDialogRecentWorkList .spacer').html('<br/>No results found');
+					}
+
+				} else if (event.type === 'exception') {
+					//Fetch exception
+				}
+			}, {escape:false});
+        }
+    });
+
+    //-----------------------------------------------------------------------------------------------
+    // INIT KANBAN
+    //-----------------------------------------------------------------------------------------------
+    kanbanObject = (new Function('return ' + initKanban))()
+    workStatusesObject = (new Function('return ' + workStatuses))()
+    console.log(kanbanObject);
+    
+	if (kanbanObject == null || kanbanObject == '') {
+		errorDialog.html("No data returned from server. Please try your request again.").dialog({ title: "Error During Initiation" }).dialog("open");	
+	} else {
+		preFilterSettings();
+		kanban(kanbanObject,'kanbanContents');
+		postFilterSettings();
+		kanbanSettings(kanbanObject,'kanbanSettingsContents');
+		populateStatuses(workStatusesObject);
+		// processColumn($('#kanbanSettingsContents .holderContents:first')); // ** THIS SHOULD RUN WHEN SETTINGS OPEN! **
+	}
+	saveWorkWithNullColumns();
+
+    //-----------------------------------------------------------------------------------------------
+    // BINDINGS
+    //-----------------------------------------------------------------------------------------------
+	// 
+	$(document).on('dblclick','.card', function(e) {
+	    selectedWork = $(this).attr('id');
+	    if (e.shiftKey) {
+			window.open('/' + selectedWork)
+		} else {
+		    workDialog.dialog("open");
+		}
+    });
+    
+	$(document).on('click', function(e) {
+		if ($(e.target).closest('.card').hasClass('highlight')) {
+			// already highlighted
+			$('.card').removeClass('highlight');
+		} else {
+			// highlight
+			$('.card').removeClass('highlight');
+			$(e.target).closest('.card').addClass('highlight');
+		}
+    });
+
+    $("#buttonBacklog").on("click", function() {
+	   backlogDialog.dialog("open");
+    });
+
+    $("#buttonFullscreen").on("click", function() {
+        var elem = document.documentElement;
+        if (!document.fullscreenElement && !document.mozFullScreenElement && !document.webkitFullscreenElement && !document.msFullscreenElement ) {
+            requestFullscreen(elem);
+        } else {
+            exitFullscreen();
+        }
+    });
+
+    $(document).on('fullscreenchange mozfullscreenchange webkitfullscreenchange MSFullscreenChange', function() {
+        if (!document.fullscreenElement && !document.mozFullScreenElement && !document.webkitFullscreenElement && !document.msFullscreenElement ) {
+            $('html').removeClass('fullscreen');
+        } else {
+            $('html').addClass('fullscreen');
+        }
+    });
+
+    $("#buttonRefresh").on("click", function() {
+		refreshBoard();
+    });
+    
+    $("#buttonFilter").on("click", function() {
+		if ($("#filterDialog").hasClass("opened")) {
+			$(this).removeClass('selected');
+			$("#kanbanContainer").css('margin-left','0px').width($("#kanbanContainer").width() + 200);
+			$("#filterDialog").removeClass('opened').css('left','-185px').css('opacity','0');
+		} else {
+			$(this).addClass('selected');
+			$("#kanbanContainer").css('margin-left','200px').width($("#kanbanContainer").width() - 200);
+			$("#filterDialog").height($("#kanbanContainer").height() + 24).addClass('opened').css('left','15px').css('opacity','1.0');
+		}
+    });
+
+    $("#buttonSettings").on("click", function() {
+		settingsDialog.dialog("open");
+	    //processColumn($('#kanbanSettingsContents .settingsColumn:first'));
+    });
+    
+    $("#buttonHelp").on("click", function() {
+	   window.open("https://sites.google.com/a/salesforce.com/gus/kanban"); 
+    });
+    
+
+	$(document).on('click','button#removeColumn', function(e) {
+		columnRemove();
+		e.stopPropagation();
+    });
+    
+	$(document).on('click','.settingsColumn', function(e) {
+		processColumn($(this));
+		e.stopPropagation();
+	});
+    
+	$(document).on('click','#tabBacklog a', function(e) {
+		showBox('#backlogDialogWorkList',this);
+		return false;
+    });
+
+	$(document).on('click','#tabRecent a', function(e) {
+		showBox('#backlogDialogRecentWorkList',this);
+		return false;
+    });
+
+	$(document).on('click','.workList input[type=checkbox]', function(e) {
+		if ( $('.workList input[type=checkbox]:checked').length > 0) {
+			$('#backlogSaveButton').show();
+		} else {
+			$('#backlogSaveButton').hide();
+		}
+    });
+    
+    $(document).on('click', '.remove-card', function(e) {
+		cardId = $(this).closest('.card').attr('id');
+		if (confirm('Are you sure you want to remove this Work card from the board?')) {
+			removeCard(cardId);
+		}
+    });
+
+    initSortable(); // setup drag-and-drop
+    resizeContainer(); // needed to make board take up all available real estate
+    updateColumnCounts(); // needed to set column limits visually
+});
+</script>
+
+</apex:page>

@@ -1,0 +1,8 @@
+<apex:component controller="testcomponentcontroller">
+    <apex:attribute name="mynewattribute" type="map" description="TODO: Describe me" />
+  <!-- Begin Default Content REMOVE THIS -->
+  <h1>Congratulations</h1>
+  This is your new Component: mynewcomponent
+  <!-- End Default Content REMOVE THIS -->
+  <apex:stylesheet value="{!$Resource.logos}"/>
+</apex:component>

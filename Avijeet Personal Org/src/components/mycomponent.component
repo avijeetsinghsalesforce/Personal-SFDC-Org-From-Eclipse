@@ -1,0 +1,4 @@
+<apex:component controller="testcomponentcontroller" extensions="testcomponentextension">
+  <apex:attribute name="a" description="a" type="string[]" assignTo="{!liststring}"/>
+  
+</apex:component>

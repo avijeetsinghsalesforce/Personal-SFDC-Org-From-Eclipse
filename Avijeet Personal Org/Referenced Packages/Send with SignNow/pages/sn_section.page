@@ -1,0 +1,50 @@
+<apex:page controller="cuda_signnow.SignNowController">
+	<div id="contStatus">
+        Status: <span id="status"></span>
+    </div>
+
+    <apex:form id="frm">
+	    <apex:commandButton id="cmbLink" value="link with my signnow account" action="{!redirectToAuthPage}" rendered="{!!authorized}"/>
+        <apex:commandButton id="cmbDisconnect" value="disconnect my signnow account" action="{!disconnectSignNow}" rendered="{!authorized}"/>
+    </apex:form>
+
+    <script type="text/javascript">
+    	var handleOauthCodeAttempt = 1;
+    	var maxAttempts = 2;
+    	var showStatus = function(status){
+        	var el = document.getElementById("status");
+            el.innerHTML = status;
+        };
+
+    	var callback = function(a, b){
+            console.log(b);
+            if(b.statusCode == 200){
+                showStatus("Connected");
+                alert("Thank you.  Your Salesforce account is now linked with SignNow.");
+            }else if(handleOauthCodeAttempt <= maxAttempts){
+          		handleOauthCode();
+            }else{
+            	alert("An error has occurred ("+b.message+").");
+            }
+        };
+
+    	var handleOauthCode = function(){
+            var el = document.getElementById('{!$Component.frm.cmbLink}');
+            el.style.display="none";
+            showStatus("Establishing connection with SignNow...");
+            handleOauthCodeAttempt++;
+            //cuda_signnow.SignNowController.handleOauthCode('{!apibase}', '{!OauthCode}', '{!client_id}', '{!secret}', callback, {timeout: 20000});
+            Visualforce.remoting.Manager.invokeAction('{!$RemoteAction.SignNowController.handleOauthCode}', '{!apibase}', '{!OauthCode}', '{!client_id}', '{!secret}', callback, {timeout: 20000});
+        };
+
+    	var init = function(){
+            var status = ({!authorized}) ? "Connected" : "Not connected";
+            showStatus(status);
+
+            if('{!OauthCode}'){
+	            handleOauthCode();
+            }
+        };
+    	init();
+    </script>
+</apex:page>

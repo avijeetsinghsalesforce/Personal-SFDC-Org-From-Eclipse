@@ -1,0 +1,163 @@
+<apex:page cache="false"
+  standardStylesheets="false"
+  showHeader="false"
+  sidebar="false"
+  standardController="KnowledgeArticle"
+  extensions="pkb_Controller"
+  language="{!pkbCon.selectedLanguage}"
+  applyBodyTag="false"
+  applyHtmlTag="false"
+  docType="html-5.0"
+  >
+<html>
+<head>
+  <title>{!pageTitle}</title>
+    <meta name="apple-mobile-web-app-capable" content="yes"></meta>
+    <meta http-equiv="content-type" content="text/html;charset=utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=.5, minimum-scale=.5, maximum-scale=.5"/>
+    <meta name="viewport" content="target-densitydpi=device-dpi" />
+
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <script src="{!$Resource.pkb_jquery_1_6_2}" type="text/javascript" />
+    <apex:includeScript value="{!$Resource.jquery}"/>
+    <script src="{!$Resource.pkb_jquery_simplemodal_1_4_1}" type="text/javascript" />    
+    <apex:stylesheet value="{!URLFOR($Resource.bootstrap, '/bootstrap-3.1.1-dist/css/bootstrap.min.css')}"/>
+    <apex:stylesheet value="{!URLFOR($Resource.bootstrap, '/bootstrap-3.1.1-dist/css/bootstrap-theme.min.css')}"/>       
+    <apex:includeScript value="{!URLFOR($Resource.bootstrap, '/bootstrap-3.1.1-dist/js/bootstrap.min.js')}"/>
+    <apex:outputText rendered="{!viewingArticle}">
+    <apex:variable var="typeName" value="{!SUBSTITUTE(pkbCon.theKad.articleTypeName, pkbCon.kavExtension, '')}" />
+    <apex:variable var="articleURL" value="{!pkbCon.currentSiteUrl}articles{!pkbCon.selectedLanguageURL}{!typeName}/{!pkbCon.theKad.urlName}" />
+        <meta property="og:title" content="{!pkbCon.theKad.title}"/>
+        <meta property="og:type" content="article"/>
+        <meta property="og:url" content="{!articleURL}"/>
+        <meta property="og:site_name" content="{!SUBSTITUTE(pkbCon.siteName,'_',' ')}" />
+        <meta property="og:description" content="{!pkbCon.theKad.summary}"/>
+        <meta property="description" content="{!pkbCon.theKad.summary}"/>
+        <link rel="canonical" href="{!articleURL}"/>
+    </apex:outputText>
+  <c:pkb_css />
+  <c:pkb_js pkbCon="{!pkbCon}" />
+</head>
+<body>
+    <div class="container-fluid">
+    <!--
+    HELPFUL DEBUG DATA
+    
+    SITE ADMIN: {!pkbCon.siteAdmin.Email}, {!pkbCon.siteAdmin.Name}<br/>
+    ALL PARAMS: {!allSearchParams}<br/>
+    SITE/PAGE URL: {!pkbCon.currentSiteUrl}<br/>
+    FEEDBACK? : {!displayFeedback}<br/>
+    SESSION: {!$Api.Session_ID}<br/>
+    RSS URL: {!$Page.pkb_RSS}<br/>
+    CATEGORIES: {!selectedCategory}<br/>
+    KNOWLEDGE ARTICLE ID: {!theKad.Id}<br/>
+    KNOWLEDGE ARTICLE ID (FROM CONTROLLER): {!KnowledgeArticle.Id}<br/>
+    -->
+    
+    <!--  HOME PAGE LAYOUT -->
+    
+      <div class="row" style="background-color: rgb(20, 115, 160);">        
+        <div class="col-xs-6 col-md-2"></div>
+        <div class="col-xs-12 col-md-8" style="text-align:left;">
+            <h1>
+                <apex:outputLink value="{!pkbCon.currentSiteUrl}">
+                    <apex:image value="{!$Resource.pkb_logo}" />
+                    <apex:param name="{!pkbCon.languageParam}" value="{!pkbcon.selectedLanguage}" />
+                </apex:outputLink>
+            </h1>
+        </div> 
+        <div class="col-xs-6 col-md-2"></div>       
+      </div>
+      
+      <div class="row">
+          <div class="col-xs-6 col-md-2"></div>
+          <div class="col-xs-6 col-md-8">       
+              <div class="row">
+            
+                <div class="col-xs-6 col-md-2" style="min-height: 650px;">
+            
+                  <div id="leftHeader" class="row" style="height: 110px;">&nbsp;</div> 
+                            
+                      <apex:outputText rendered="{!displayContactUs}">
+                        <apex:outputText rendered="{!searchExecuted}">
+                          <div id="immediateHelp" style="text-align: right; font-weight: bold; font-size: 110%; padding-top: 12px;">{!$Label.PKB2_Answers_Might_Help}</div>
+                        </apex:outputText>
+                      </apex:outputText>                
+                  
+                  <apex:outputText rendered="{!NOT(displayContactUs)}">
+                    <div id="left_content">
+            
+                      <apex:outputText rendered="{!NOT(viewingArticle)}">
+                        <c:pkb_narrow pkbCon="{!pkbCon}" />
+                        <div id="contactUs">
+                          {!$Label.PKB2_Contact_Us_Link_Prompt}<br/>
+                          <apex:outputLink value="{!pkbCon.currentSiteUrl}">
+                            {!$Label.PKB2_Contact_Us}
+                            <apex:param name="{!pkbCon.contactUsParam}" value="{!pkbCon.contactUsValue}" />
+                            <apex:param name="{!pkbCon.feedbackSourceParam}" value="{!pkbCon.feedbackContactUs}" />
+                            <apex:param name="{!pkbCon.languageParam}" value="{!pkbCon.selectedLanguage}" />
+                          </apex:outputLink>
+                        </div>
+                      </apex:outputText>
+            
+                      <apex:outputText rendered="{!viewingArticle}">
+                        <c:pkb_related pkbCon="{!pkbCon}" />
+                      </apex:outputText>
+                    </div>
+                  </apex:outputText>
+            
+                </div>
+            
+            
+                <div class="col-xs-6 col-md-10" style="min-height: 650px;">
+            
+                  <div id="rightHeader" style="height: 106px;">
+                    <c:pkb_search pkbCon="{!pkbCon}" />
+                  </div>
+            
+                  <div id="right_content">
+            
+                    <apex:outputText rendered="{!NOT(displayContactUs)}">
+                      <apex:outputText rendered="{!NOT(viewingArticle)}">
+                        <c:pkb_featured pkbCon="{!pkbCon}" rendered="{!NOT(searchExecuted)}" />
+                        <c:pkb_popular pkbCon="{!pkbCon}" rendered="{!NOT(searchExecuted)}" />
+                        <c:pkb_results pkbCon="{!pkbCon}" rendered="{!searchExecuted}" showHeaderInfo="true" />
+                      </apex:outputText>
+            
+                      <apex:outputText rendered="{!viewingArticle}">
+                        <div id="articleView" >
+                          <c:pkb_articleview pkbCon="{!pkbCon}" showFeedbackYesNo="true" showBackLinks="true" />
+                        </div>
+                      </apex:outputText>
+                    </apex:outputText>
+            
+                    <apex:outputText rendered="{!displayContactUs}">
+                      <c:pkb_results pkbCon="{!pkbCon}" rendered="{!searchExecuted}" showHeaderInfo="false" />
+                      <c:pkb_contactus_buttons_article pkbCon="{!pkbCon}" />
+                    </apex:outputText>
+            
+                  </div>
+            
+                </div>            
+                
+              </div>
+          </div>
+          <div class="col-xs-6 col-md-2" style="clear: both;"></div> 
+      </div>
+        
+      <div class="row" style="background-color: rgb(20, 115, 160);">
+        <h1>
+            <apex:outputPanel styleClass="pkbPoweredBySFDC" style="float: right;">
+              <a href="http://www.salesforce.com/crm/customer-service-support/"><apex:image value="{!$Resource.pkb_footer}" alt="Customer Service Software"/>
+              <apex:outputPanel styleClass="pkbPoweredBySFDCText">salesforce.com</apex:outputPanel></a>
+            </apex:outputPanel>
+        </h1>
+      </div>
+    <site:googleAnalyticsTracking />
+</div>
+</body>
+
+</html>
+<site:previewAsAdmin />
+</apex:page>

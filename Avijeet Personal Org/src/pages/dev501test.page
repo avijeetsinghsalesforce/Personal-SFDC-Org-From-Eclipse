@@ -1,0 +1,8 @@
+<apex:page controller="TestController" >
+  <!-- Begin Default Content REMOVE THIS -->
+  <h1>Congratulations</h1>
+  This is your new Page: dev501test
+  <!-- End Default Content REMOVE THIS -->
+  <c:mycomponent />
+  
+</apex:page>

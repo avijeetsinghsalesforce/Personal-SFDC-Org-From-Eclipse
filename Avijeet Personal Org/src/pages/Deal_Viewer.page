@@ -1,0 +1,94 @@
+<apex:page standardController="Contact" extensions="DealViewerExtension" id="thePage">
+    <apex:sectionHeader id="header" title="Deal Viewer" subtitle="{!con.Name}"/>
+    <apex:form id="dealActionForm">
+        <apex:pageBlock id="containerPageBlock">  
+                <apex:pageMessages id="errorMessage"></apex:pageMessages>      
+                <apex:pageBlockButtons id="pageButtons">
+                    <apex:commandButton id="returnToContactButton" value="Done" action="{!redirectToContactRecord}"/>
+                </apex:pageBlockButtons>
+                <apex:outputPanel id="summarySection">
+                    <apex:pageBlockSection id="todayDealSummarySection" title="Today's Deal Summary" collapsible="false">
+                        <apex:pageBlockSectionItem >
+                            <apex:outputLabel value="Today's Acceptance Rate"></apex:outputLabel>
+                            <apex:outputText value="{0}%">
+                                <apex:param value="{!ROUND(todayAcceptanceRate,0)}"/>
+                            </apex:outputText>
+                        </apex:pageBlockSectionItem>
+                        <apex:pageBlockSectionItem >
+                            <apex:outputLabel value="Today's Deals Reviewed"></apex:outputLabel>
+                            <apex:outputText value="{!dealsReviewedToday}"></apex:outputText>
+                        </apex:pageBlockSectionItem>
+                        <apex:pageBlockSectionItem >
+                            <apex:outputLabel value="Today's Deals Accepted"></apex:outputLabel>
+                            <apex:outputText value="{!dealsAcceptedToday}"></apex:outputText>
+                        </apex:pageBlockSectionItem>
+                        <apex:pageBlockSectionItem >
+                            <apex:outputLabel value="Today's Deals Rejected"></apex:outputLabel>
+                            <apex:outputText value="{!dealsRejectedToday}"></apex:outputText>
+                        </apex:pageBlockSectionItem>
+                        <apex:pageBlockSectionItem >
+                            <apex:outputLabel value="Today's Deals Available"></apex:outputLabel>
+                            <apex:outputText value="{!dealsAvailableToday}"></apex:outputText>
+                        </apex:pageBlockSectionItem>
+                    </apex:pageBlockSection>
+                    <apex:pageBlockSection id="totalDealSummarySection" title="Total Deal Summary" collapsible="false">
+                        <apex:outputField value="{!con.Acceptance_Rate__c}"/>
+                        <apex:outputField value="{!con.Deals_Accepted__c}"/>
+                        <apex:outputField value="{!con.Deals_Rejected__c}"/>
+                    </apex:pageBlockSection>   
+                </apex:outputPanel>     
+                <apex:pageBlockSection id="dealviewingSection" title="Deals" collapsible="false" columns="1">
+                    <apex:outputPanel id="dealTable" rendered="{!dealList.size > 0}">
+                        <apex:pageBlockTable value="{!dealWrapperList}" var="dealVar">
+                            <apex:column headerValue="Action">                                
+                                <apex:actionStatus id="actionStatus">
+                                    <apex:facet name="start">  
+                                        <apex:outputPanel >  
+                                            <apex:commandButton value="Processing ...." disabled="true"/>                                             
+                                            <apex:image value="/img/loading24.gif"/>  
+                                        </apex:outputPanel>  
+                                    </apex:facet>  
+                                   <apex:facet name="stop">  
+                                       <apex:outputPanel >  
+                                            <apex:commandButton value="Accept" disabled="{!dealVar.isActioned}" action="{!createDealAction}" reRender="summarySection,errorMessage,dealTable" status="actionStatus">
+                                                <apex:param name="actionedDealId" value="{!dealVar.deal.id}" assignTo="{!actionedDealId}"/>
+                                                <apex:param name="actionedContactId" value="{!con.id}" assignTo="{!actionedContactId}"/>
+                                                <apex:param name="actionPerformed" value="Accepted" assignTo="{!actionPerformed}"/>
+                                            </apex:commandButton>
+                                            <apex:commandButton value="Reject" disabled="{!dealVar.isActioned}" action="{!createDealAction}" reRender="summarySection,errorMessage,dealTable" status="actionStatus">
+                                                <apex:param name="actionedDealId" value="{!dealVar.deal.id}" assignTo="{!actionedDealId}"/>
+                                                <apex:param name="actionedContactId" value="{!con.id}" assignTo="{!actionedContactId}"/>
+                                                <apex:param name="actionPerformed" value="Rejected" assignTo="{!actionPerformed}"/>
+                                            </apex:commandButton>
+                                        </apex:outputPanel>  
+                                    </apex:facet>  
+                                </apex:actionStatus>
+                            </apex:column>
+                            <apex:column value="{!dealVar.status}" headerValue="Status"/>
+                            <apex:column headerValue="Icon">
+                                <!--apex:image alt="{!dealVar.deal.name}" title="{!dealVar.deal.name}" height="32px" width="32px" url="{!dealVar.iconUrl}"/-->
+                                <apex:image value="{!URLFOR($Resource.ajaxLoadGif)}" height="32px" width="32px"/>
+                                <apex:image value="{!URLFOR($Action.Attachment.Download,dealVar.deal.attachments[0].id)}" rendered="{!dealVar.deal.attachments.size > 0}" height="32px" width="32px"/>
+                            </apex:column>
+                            <apex:column value="{!dealVar.deal.name}" headerValue="{!$ObjectType.Deal__c.Fields.Name.Label}"/>
+                            <apex:column value="{!dealVar.deal.Valid_Through__c}" headerValue="{!$ObjectType.Deal__c.Fields.Valid_Through__c.Label}"/>
+                            <apex:column value="{!dealVar.deal.Available_Deals__c}" headerValue="{!$ObjectType.Deal__c.Fields.Available_Deals__c.Label}"/>
+                        </apex:pageBlockTable>
+                        <apex:outputPanel layout="block" styleClass="pSearchShowMore" id="otpNav"> 
+                            <apex:commandButton value="|< First" disabled="{!NOT(HasPrevious)}" action="{!first}" reRender="dealTable,errorMessage"/>
+                            <apex:commandButton value="< Previous" disabled="{!NOT(HasPrevious)}" action="{!Previous}" reRender="dealTable,errorMessage"/>                             
+                            <apex:outputText style="font-style:bold" value=" Page {0} of {1} ">
+                                <apex:param value="{!dealCon.PageNumber}"/>
+                                <apex:param value="{!CEILING(dealcon.resultSize/dealCon.PageSize)}"/>    
+                            </apex:outputText>                            
+                            <apex:commandButton value="Next >" disabled="{!NOT(HasNext)}" action="{!Next}" reRender="dealTable,errorMessage"/>
+                            <apex:commandButton value="Last >|" disabled="{!NOT(HasNext)}" action="{!last}" reRender="dealTable,errorMessage"/> 
+                         </apex:outputPanel>
+                    </apex:outputPanel>
+                    <apex:outputPanel id="errordealTable" rendered="{!dealList.size <= 0}">
+                        <center><h1><b>** Sorry no Deals available **</b></h1></center>
+                    </apex:outputPanel>
+                </apex:pageBlockSection>              
+        </apex:pageBlock>        
+    </apex:form>  
+</apex:page>

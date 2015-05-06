@@ -1,0 +1,80 @@
+<apex:page controller="DemoAutoComplete" showHeader="false">
+ <script src="https://code.jquery.com/jquery-1.9.1.js"></script>
+ <link rel="stylesheet" href="https://code.jquery.com/ui/1.10.2/themes/smoothness/jquery-ui.css" />
+ <script src="https://code.jquery.com/jquery-1.9.1.js"></script>
+ <script src="https://code.jquery.com/ui/1.10.2/jquery-ui.js"></script>
+ <link rel="stylesheet" href="/resources/demos/style.css" />
+    
+    <script>
+                
+        if(typeof jQuery != 'undefined'){
+           $j =jQuery.noConflict();
+       }
+         $j(function() {            
+             $j("input.auto001").autocomplete({
+                source: function(request, response){
+                    getMyData(response ,request.term);
+                },
+                select: function(event, ui){
+                    $j("input.auto001").val(ui.item.value);
+                    $j('input.auto002').val(ui.item.id);
+                    refresh();                    
+                    return false;
+                }            
+            });            
+            
+        });
+        
+
+        
+        function getMyData(response,param){
+            Visualforce.remoting.Manager.invokeAction(
+                '{!$RemoteAction.DemoAutoComplete.getAccounts}',
+                param, 
+                function(result, event){
+                    if (event.status) {                        
+                        var objList = [];
+                        for(var i = 0; i < result.length; i++){
+                            var obj = new Object();
+                            obj.label = result[i].Name;
+                            obj.value = result[i].Name;
+                            obj.id = result[i].Id;
+                            objList.push(obj);
+                        }
+                        response(objList);
+                    }else {
+                        alert(event.message);
+                    }
+                }, 
+                {escape: true}
+            );
+        }
+</script>
+    
+    <apex:form id="mainForm">    
+        <div class="filterOverview">
+            <div class="bFilterView">
+                <table border="0">                    
+                    <tr>    
+                        <td>Choose an account</td>                    
+                        <td>
+                            <div class="ui-widget">
+                                <apex:inputText id="x_val" styleClass="auto001" value="{!accName}" />
+                                <apex:inputText id="auto002" value="{!accId}" styleClass="auto002" style="visibility:hidden"/>                                
+                            </div>
+                        </td>                
+                    </tr>                
+                    <tr>    
+                        <td>selected Id</td>                    
+                        <td>
+                            <apex:actionfunction name="refresh" action="{!Refresh}" rerender="pn1"/>
+                            <apex:outputPanel id="pn1">
+                                <apex:outputText id="x_id" value="{!accId}" />
+                            </apex:outputPanel>
+                        </td>                
+                    </tr>                                
+                </table>
+            </div>
+        </div>
+    </apex:form>
+</apex:page>

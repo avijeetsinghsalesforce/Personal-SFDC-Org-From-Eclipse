@@ -1,0 +1,17 @@
+<apex:component allowDML="true" controller="SortColumns" access="global"> 
+ <apex:attribute type="String" description="Selected sObject Name" name="SelectedObject" assignTo="{!objSelected}"/>
+ <apex:pageMessages rendered="{!errorFlag}"/>
+ <apex:dataTable value="{!OrderLst}" var="v" cellspacing="10px" cellpadding="1px" border="1px">
+    <apex:column headerValue="Sort Order">
+      <apex:selectList value="{!v.selected}" size="1">
+        <apex:selectOptions value="{!v.options}"/>
+      </apex:selectList>
+    </apex:column>
+    <apex:column headerValue="Field Label" value="{!v.hrFlds.Field_Label__c}"/>
+    <apex:column headerValue="API Name" value="{!v.hrFlds.Name}"/>
+    <apex:column headerValue="Current Sort Order" value="{!v.hrFlds.Sort_Order__c}"/>
+ </apex:dataTable>
+ <br/><br/>
+<center> <apex:commandButton value="Save" action="{!OrderColumns}"/>
+ <apex:commandButton value="Cancel" action="{!Cancel}"/> </center>
+</apex:component>

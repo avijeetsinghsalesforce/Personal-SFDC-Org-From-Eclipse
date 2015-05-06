@@ -1,0 +1,95 @@
+<apex:component controller="PickListMultiSelect" id="theComponent" allowDML="true" access="global">
+<apex:form >
+ 
+ <center><u><b>Note:</b></u></center>
+ <br/>
+ * Use the selection boxes below to select the fields to be added or removed from the custom hierarchy screen. <br/> <br/>
+ * Each tab has certain compulsory fields that can not be removed or re-ordered.They are:  <br/> <br/>
+ <table cellspacing="1" cellpadding="1" border="1">
+   <tr><td><b>Account</b></td>
+       <td><b>Contact</b></td>
+       <td><b>Opportunity</b></td>
+   </tr>
+   <tr><td>Account Name</td>
+       <td>Contact Name</td>
+       <td>Opportunity Name</td>  
+   </tr>
+   <tr><td>Account Owner</td>
+       <td>Account Name</td>
+       <td>Account Name</td>
+   </tr> 
+          
+ </table> 
+<br/><br/>
+<table><tr><td><b> Choose an Object :</b>
+<apex:selectList value="{!ObjectSelected}" size="1">
+<apex:actionSupport event="onchange" action="{!describeObject}"  reRender="thePanel,srtclm" status="waitingStatusLoad"/>
+<apex:selectOptions value="{!avblObjects}"/>
+</apex:selectList>
+</td></tr>
+</table>
+<br/>
+<apex:pageMessage severity="ERROR" summary="{!msg}" rendered="{!errorMsg}"/>
+        <apex:actionStatus id="waitingStatusLoad">                   
+                        <apex:facet name="start">
+                        <div class="waitingSearchDiv waitingSearchDivOpacity" style="width: 100%; height: 100%; display: block;"/>
+                        <div id="00B80000007AEEH_loading" class="waitingSearchDiv" style="width: 100%; height: 100%; display: block;">
+                        <div class="waitingHolder" style="top: 12%; width: 100px; ">
+                        <img class="waitingImage" src="/img/loading.gif" width="27px" height="27px"/>
+                
+                        <span class="waitingDescription"><font size="3">Processing...</font></span>
+                        </div>
+                        </div>                
+                        </apex:facet>
+                        <apex:facet name="stop"></apex:facet>
+          </apex:actionStatus>
+<font color='blue'><i>
+Use the Order button to define the order in which the columns should appear on the screen </i>
+</font>
+
+<apex:outputPanel id="thePanel" rendered="{!NOT(showOrderSort)}">
+<table width="550px">
+<tr>
+<td align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<b>Available</b>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+<br/>
+<apex:selectList id="FieldsAvbl" multiselect="true" size="25" value="{!FieldsSelected}" style="width:250Px" >
+<apex:selectoptions value="{!AvblFields}" />
+<apex:actionSupport event="ondblclick" action="{!addFields}" rerender="FieldsAvbl,selectedFields" status="waitingStatusLoad"/>
+</apex:selectList>
+</td>
+<td width="30px;"><br/><table border="0">
+<tr><td><br/><br/><br/><br/><br/><br/><br/><br/><br/><br/><apex:commandLink action="{!addFields}" reRender="FieldsAvbl,selectedFields"  status="waitingStatusLoad">
+<apex:image id="AddButton" ismap="true" value="{!$Resource.Add_Button}" width="25" height="30"/>
+</apex:commandLink></td></tr>
+<tr><td>
+<apex:commandLink id="theLink" action="{!removeFields}" reRender="FieldsAvbl,selectedFields" status="waitingStatusLoad">
+<apex:image id="removeButton" ismap="true" value="{!$Resource.Remove_Button}" width="26" height="43"/>
+</apex:commandLink></td></tr></table></td>
+<td align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<b>Chosen</b>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+<br/>
+<apex:selectList id="selectedFields" multiselect="true" value="{!removeList}" size="25" style="width:250Px">
+<apex:selectOptions id="theOptions" value="{!FieldsInSelectList}"/>
+</apex:selectList>
+</td> 
+</tr>
+<tr><td>&nbsp;</td></tr>
+<tr><td colspan="6" align="center">  
+  <apex:commandButton value="Order Columns" action="{!SaveHierarchyColumns}"/>&nbsp;
+  <apex:commandButton value="Back" action="{!back}"/>  
+</td></tr>
+</table>
+<span style="color:#D2691E">
+<apex:actionStatus id="Status" startText="processing your request...please wait" />
+</span>
+</apex:outputPanel>
+
+ <c:SortHierarchyColumns SelectedObject="{!ObjectSelected}" id="srtclm" rendered="{!showOrderSort}"/> 
+ 
+ <br/><br/>
+<font color='red'><i>
+ * Certain fields are not sortable or do not format well in a list view. <br/>Please exercise caution when selecting fields then test your results after saving </i>
+</font>
+
+
+ </apex:form>
+</apex:component>

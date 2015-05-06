@@ -1,0 +1,8 @@
+<apex:page standardController="Account">
+    <apex:outputPanel rendered="{!$ObjectType.Account.accessible}">
+        u can see
+    </apex:outputPanel>
+    <apex:outputPanel rendered="{!NOT($ObjectType.Account.accessible)}">
+        u cannot see
+    </apex:outputPanel>
+</apex:page>

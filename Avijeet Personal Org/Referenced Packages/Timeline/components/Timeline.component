@@ -1,0 +1,76 @@
+<!-- 
+// Copyright 2013, Daron Kallan - Sales Engineering, Salesforce.com Inc.
+// All rights reserved.
+//
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions are met:
+//
+// - Redistributions of source code must retain the above copyright notice,
+//   this list of conditions and the following disclaimer.
+// - Redistributions in binary form must reproduce the above copyright notice,
+//   this list of conditions and the following disclaimer in the documentation
+//   and/or other materials provided with the distribution.
+// - Neither the name of the salesforce.com nor the names of its contributors
+//   may be used to endorse or promote products derived from this software
+//   without specific prior written permission.
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+// DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE
+// FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+// DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+// SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+// CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+// OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ -->
+
+<apex:component controller="slt.Timeline" access="global" selfClosing="true" layout="none" id="Timeline">
+
+	<apex:attribute name="value" id="id" assignTo="{!ContextID}" access="global" description="ID of the object to render in the timeline" type="Id" required="true" />
+	<apex:attribute name="csat" id="csat" assignTo="{!IncludeCSATMeter}" access="global" type="Boolean" description="Option to include a sliding Customer Satisfaction meter at the bottom of the timeline (height=150px if false, 170px if true)" />
+
+	<apex:includeScript value="{!URLFOR($Resource.slt__Resources, 'jquery-1.10.2.min.js')}"/>
+	<apex:includeScript value="{!URLFOR($Resource.slt__Resources, 'simile_ajax_api.js')}?bundle=true"/>
+	<apex:includeScript value="{!URLFOR($Resource.slt__Resources, 'timeline_api.js')}?bundle=true"/>
+	<apex:includeScript value="/support/console/28.0/integration.js"/>
+	<apex:stylesheet value="{!URLFOR($Resource.slt__Resources, 'timeline.css')}" />
+
+	<div id="my-timeline"></div>
+	<noscript>
+		This page uses Javascript to show you a Timeline. Please enable Javascript in your browser to see the full page. Thank you.
+	</noscript>
+
+	<div id="filterPanel" style="{!IF(CategoryCount > 0, '', 'display:none;visibility:hidden')}">
+		<div id="filterPanelOpener" title="Filter Timeline" onclick="openFilterPanel();"></div>
+		<div id="filterPicker">
+			<span class="filterLabel">Filter</span><br />
+			<div id="filterPanelCloser" title="Close Filters" onclick="closeFilterPanel();"></div>
+			<div id="filterCategories">
+				<apex:repeat value="{!EventCategories}" var="ec" id="EventCategories">
+					<input class="filterbox" type="checkbox" value="{!ec.classname}" name="{!ec.classname}-Toggle" id="{!ec.classname}-Toggle" onchange="toggleCategory(this);" /> {!ec.label}<br />
+					<script>document.getElementById('{!ec.classname}-Toggle').checked = {!ec.visible};</script>
+				</apex:repeat>
+			</div>
+		</div>
+	</div>
+	<div id="zoomButtons">
+		<div id="zoomOutButton" onclick="zoomOut();" title="Zoom Out"></div>
+		<div id="zoomInButton" onclick="zoomIn();" title="Zoom In"></div>
+	</div>
+	<div id="refreshButton" onclick="reloadDataIntoEventSource();" title="Refresh Events"></div>
+	<div id="CSATMeter" class="{!IF(IncludeCSATMeter,'CSATMeter','hidden')}" style="top:-12px;">
+		<div id="CSATIndicator"></div>
+		<div id="CSATNeutralBar"></div>
+		<div id="CSATBar"><div id="CSATNegative"></div><div id="CSATNeutral"></div><div id="CSATPositive"></div></div>
+	</div>
+
+	<input type="hidden" name="ContextID" id="ContextID" value="{!ContextID}" />
+	<input type="hidden" name="ContactID" id="ContactID" value="{!ContactID}" />
+	<input type="hidden" name="AccountID" id="AccountID" value="{!AccountID}" />
+	<input type="hidden" name="Timezone" id="Timezone" value="{!Timezone}" />
+
+	<script type="text/javascript" src="{!URLFOR($Resource.Resources, 'timeline.js')}"/>
+
+</apex:component>

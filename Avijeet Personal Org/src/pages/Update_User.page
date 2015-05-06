@@ -1,0 +1,74 @@
+<apex:page controller="UpdateUserProfileController" sidebar="false" showHeader="false" docType="html-5.0">      
+    <apex:pageMessages ></apex:pageMessages>
+    <apex:includeScript value="{!$Resource.jquery}"/>
+    <apex:includeScript value="{!$Resource.jqueryuijs}"/>
+    <apex:stylesheet value="{!$Resource.jqueryuicss}"/>
+    <script>
+        $(document).ready(function() {
+            $("input[id$='userName']").autocomplete({
+                minLength: 1,
+                source: function(request, response){
+                    devavijeet.UpdateUserProfileController.findUsers(request.term, function(result, event){
+                        if(event.type == 'exception'){
+                            alert(event.message);
+                        } 
+                        else{
+                            users = result;
+                            response(users);
+                        }
+                    });
+                },
+                focus: function( event, ui ) {
+                    $("input[id$='userName']").val( ui.item.Name );
+                    return false;
+                },
+                select: function( event, ui ) {
+                    $("input[id$='userName']").val( ui.item.Name );                    
+                    if (event.keyCode == 13) {
+                        event.preventDefault();
+                    }
+                        return false;
+                    }                               
+            });
+            $("input[id$='profileName']").autocomplete({
+                minLength: 1,
+                source: function(request, response)    {
+                    devavijeet.UpdateUserProfileController.findProfiles(request.term, function(result, event){
+                        if(event.type == 'exception'){
+                            alert(event.message);
+                        } 
+                        else{
+                            profiles = result;
+                            response(profiles);
+                        }
+                    });
+                },
+                focus: function( event, ui ) {
+                    $("input[id$='profileName']").val( ui.item.Name );
+                    return false;
+                },
+                select: function( event, ui ) {
+                    $("input[id$='profileName']").val( ui.item.Name );                    
+                    if (event.keyCode == 13) {
+                        event.preventDefault();
+                    }
+                        return false;
+                    }                
+            });
+        });
+    </script>
+    <apex:form > 
+        <apex:pageBlock >
+            <apex:pageBlockSection title="Update User Profile" collapsible="false" columns="2">
+                <apex:inputText value="{!selectedUserId}" id="userName" label="Select User Name">                    
+                </apex:inputText> 
+                <apex:inputText value="{!selectedProfileId}" id="profileName" label="Select Profile Name">                    
+                </apex:inputText>                
+            </apex:pageBlockSection>
+            <center>
+                <apex:commandButton value="Submit" action="{!updateUser}"/>
+            </center>
+        </apex:pageBlock>           
+    </apex:form>
+    
+</apex:page>

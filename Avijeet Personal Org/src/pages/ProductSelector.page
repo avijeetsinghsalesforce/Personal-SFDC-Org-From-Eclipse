@@ -1,0 +1,325 @@
+<apex:page controller="ProductSelectorController">
+
+    <!-- Tree Code Starts Here-->
+   
+    <apex:includeScript value="{!URLFOR($Resource.dynatree, 'dynatree/jquery-1.7.2.min.js')}" />
+    <apex:includeScript value="{!URLFOR($Resource.dynatree, 'dynatree/jquery-ui-1.8.20.custom.min.js')}" />
+    <apex:stylesheet value="{!URLFOR($Resource.dynatree, 'dynatree/jquery-ui-1.8.20.custom.css')}" />
+
+
+<!--  <apex:includeScript value="{!URLFOR($Resource.DynaTree, 'jquery/jquery.js' )}" />-->
+<!--  <apex:includeScript value="{!URLFOR($Resource.DynaTree, 'jquery/jquery-ui.custom.js' )}" />  -->
+<!--  <apex:includeScript value="{!URLFOR($Resource.DynaTree, 'jquery/jquery.cookie.js' )}" />-->
+
+  <apex:includeScript value="{!URLFOR($Resource.dynatree1, 'src/jquery.dynatree.js' )}" />
+
+  <!-- Theme vista: /skin-vista/ui.dynatree.css  regular : /skin/ui.dynatree.css -->
+
+  <apex:stylesheet value="{!URLFOR($Resource.dynatree1, 'src/skin/ui.dynatree.css')}" />
+
+
+    <style>
+span.custom1 a {
+    color: gray;
+    font-weight: light;
+    font-style: italic;
+    background-color: white;
+}
+
+.pgBlockDivTable {
+    border-top: 3px solid #ccc;
+    border-bottom: 1px solid #eaeaea;
+    border-left: 1px solid #eaeaea;
+    border-right: 1px solid #eaeaea;
+    background-color: white;
+}
+.pgBlockTableDate {
+    border-top: 3px solid #1797c0;
+    border-bottom: 1px solid #eaeaea;
+    border-left: 1px solid #eaeaea;
+    border-right: 1px solid #eaeaea;
+    background-color: white;
+}
+.tableWrapper{
+    overflow:scroll;
+    height:100%;
+    width:100%;
+    overflow:auto
+}
+.odd {
+        background-color: #F0F0F0 ;
+}
+.even {
+        background-color: #DDD ;
+}
+.tableHeader{
+        background-color: #CFD5D6 ;
+}
+
+ul.dynatree-container {
+        padding: 0px;
+        width: 100%;
+        height: 100%;
+        min-width: 380px;
+        min-height: 380px;
+        overflow: auto;
+}
+.apexp .bPageBlock.apexDefaultPageBlock .pbBody .pbSubheader {
+        border-top: 0;
+        color: black;
+}
+.bPageBlock .labelCol {
+        padding-right: 20px;
+}
+</style>
+
+
+ <!-- Add code to initialize the tree when the document is loaded: -->
+<script type="text/javascript">  
+    $(function(){  
+    $("#searhwaitingImage").hide();    
+    $( "#treeDiv" ).resizable({ 
+     minHeight: 150 ,
+     minWidth: 150,
+     alsoResize: "#tree",
+     ghost : true        
+     });
+     // Attach the dynatree widget to an existing <div id="tree"> element  
+     // and pass the tree options as an argument to the dynatree() function:  
+     $("#tree").dynatree({
+        onActivate: function(node) {  
+            // A DynaTreeNode object is passed to the activation handler  
+            // Note: we also get this event, if persistence is on, and the page is reloaded.  
+            //alert("You activated " + node.data.key);  
+        },
+        onLazyRead: function(node){
+        var pricebookName = "{!opportunity.Price_Book__c}"; 
+        Visualforce.remoting.Manager.invokeAction(
+            '{!$RemoteAction.ProductSelectorController.getNextLevel}', 
+             node.data.key,
+             pricebookName, 
+             function(result, event){
+                
+                // PWS status OK
+                node.setLazyNodeStatus(DTNodeStatus_Ok);
+                node.addChild(result);
+            }, 
+            {escape: true}
+            );
+        },
+        onPostInit: function(isReloading, isError) {
+        } ,
+      persist: false,  
+      checkbox: {!selectable},  
+      generateIds: false,  
+      classNames: {  
+          checkbox: "dynatree-checkbox",  
+          expanded: "dynatree-expanded"  
+      },  
+      selectMode: 3,
+      minExpandLevel: 1,  
+      children: {!JsonString},  
+      onSelect: function(select, node) {  
+          if(select) {
+              addRow(node.data.key,node.data.title);
+          } else {
+              //Do Nothing
+          }
+                       
+      }  
+     });
+    }); 
+</script>
+<script>
+    $(function() {
+      jQuery.noConflict();
+      init();
+      var pricebookName = "{!opportunity.Price_Book__c}"; 
+      var textboxid ="txtSearch";
+      $('[id=\"' + textboxid+'\"]').autocomplete({
+        source: function (req, response) {
+         $("#searhwaitingImage").show();
+         Visualforce.remoting.Manager.invokeAction(
+            '{!$RemoteAction.ProductSelectorController.getSearchedProducts}', 
+             req.term,
+             pricebookName,
+             function(result, event){
+                    response(result);
+                    $("#searhwaitingImage").hide();
+            }, 
+            {escape: true}
+          );
+          
+          },
+          select: function( event, ui ) {
+            addRow(ui.item.value,ui.item.label);
+                },
+          close: function( event, ui ) {
+            $("#searhwaitingImage").hide();
+            $('#' + textboxid).val('');
+          }
+                });
+       
+        /*$('[id=\"' + textboxid+'\"]').change(function() {                 
+            setTimeOut($('[id=\"' + textboxid+'\"]').val(""), 1000);
+        });*/
+     
+     });
+   function deleteRow(productId,LineItemId) {
+     var errMsg = "Are you sure?";
+     if(LineItemId != '' ) {
+         errMsg = "Are you sure? \n This will delete the existing Opportunity product."
+     }
+     var r=confirm(errMsg);
+     if (r==true) {
+       removeRow(productId);
+     }
+     else {
+        return false;
+     }
+   }
+   
+   function createCalender(obj,type) {     
+     if(type == 'date') {
+        $(obj).datepicker();
+     }
+   }
+   
+   function  init() {
+    $( ".dateTextBox" ).each(function() {
+          $( this ).removeAttr("onfocus");
+          $( this ).blur();
+        });
+   }
+   
+   
+   /*
+   function setFocus(ele){
+          ele.onfocus = function(ev){
+            ev.preventDefault();
+            ev.stopPropagation();
+            }
+     }*/
+  </script>
+        
+        
+    <!-- Tree Code Ends Here -->
+    <apex:form >
+        <apex:sectionHeader title="Product Selector"
+            subtitle="{!opportunity.Name}" />
+        <apex:outputpanel id="psMsg" style="width: 2000px;">
+            <apex:pageMessages />
+        </apex:outputpanel>
+        <apex:outputLabel rendered="{!!isError}">
+         <table>
+            <tr>
+            <td class="pgBlockTableDate">
+            <apex:outputPanel id="opTree" rendered="{!!isError}">
+                
+                <apex:outputLabel value="Choose Products" style="font-weight: bold;" />
+                <br />
+                <br />
+                <div><apex:outputLabel value="Search"
+                    style="font-weight:Bold;padding-right:10px;" for="txtSearch" /> 
+                    <input id="txtSearch2" type="text" style="display: none;    "  autofocus="autofocus" />
+                    <input class="ui-autocomplete-input" role="textbox" aria-autocomplete="list" aria-haspopup="true" 
+                    type="text" id="txtSearch" value="" />&nbsp;&nbsp;&nbsp;
+                     <img id="searhwaitingImage" src="{!URLFOR($Resource.DynaTree,'GsNJNwuI-UM.gif')}"/> 
+<!--                     <img id="searhwaitingImage" src="/img/loading.gif"/> -->
+                    <br />
+                <br />
+                </div>
+                <div id="treeDiv" style="width-min: 390px; height-min: 390px;">
+                    <div id="tree" style="width: 100%;height: 100%;overflow: hidden;"></div>
+                </div>
+            </apex:outputPanel>
+            </td>
+            <td class="pgBlockTableDate" style="width: 100%;"><apex:outputLabel value="Selected Products" style="font-weight: bold;" /> <br />
+            <br />
+            
+            <apex:outputpanel id="pbOLI">
+                <apex:outputpanel rendered="{!lineItemWrapper.size == 0}">
+                    <apex:outputLabel value="No Product Selected !" style="font-style:italic;" />
+                </apex:outputpanel>
+                <apex:outputpanel >
+                    <center><apex:commandButton action="{!saveRecords}"
+                        value="Save" /> <apex:commandButton action="{!cancel}"
+                        value="Cancel" /></center>
+                    <br />
+                </apex:outputpanel>
+                <div class="tableWrapper">
+                <apex:pageblock >
+                <table class="list pgBlockDivTable">                    
+                    <tbody>
+                            <apex:variable var="index" value="{!1}" />
+                            
+                        <apex:repeat var="lineItemWrpr" value="{!lineItemWrapper}">                             
+                                                        <tr class="{!IF(MOD(index,2)==1,'even','odd')}">
+                             <td class="dataCell">                             
+                             <apex:pageBlockSection title="{!lineItemWrpr.prodDesc}" columns="4"
+                               collapsible="false">
+                                    <apex:pageBlockSectionItem helpText="{!$ObjectType.OpportunityLineItem.Fields.UnitPrice.inlineHelpText}" rendered="{!showSalesPrice}">
+                                        <apex:outputLabel value="12 Month Opportunity $" ></apex:outputLabel>
+                                        <apex:inputField value="{!lineItemWrpr.lineItem.UnitPrice}" />
+                                    </apex:pageBlockSectionItem>
+                                    <apex:pageBlockSectionItem helpText="{!$ObjectType.OpportunityLineItem.Fields.UnitPrice.inlineHelpText}" rendered="{!hideSalesPrice}">
+                                        <apex:outputLabel value="12 Month Opportunity $" ></apex:outputLabel>
+                                        <apex:outputLabel value="{!lineItemWrpr.lineItem.UnitPrice}" />
+                                    </apex:pageBlockSectionItem>                                    
+                                    <apex:outputPanel /><apex:outputPanel /><apex:outputPanel />                                    
+                                    
+                                <apex:repeat var="f" value="{!fields}">
+                                    <apex:inputField value="{!lineItemWrpr.lineItem[f]}" onblur="createCalender(this,'{!f.type}')" styleClass="{!IF(f.type == 'date','dateTextBox','regularTextBox')}"/>                                
+                                </apex:repeat>
+                                <apex:outputPanel >
+                                <apex:commandLink rerender="pbOLI,psMsg"
+                                status="status" onclick="deleteRow('{!lineItemWrpr.productId}' , '{!lineItemWrpr.lineItem.Id}');return false;">
+                                ﻿
+                                            <apex:image value="{!IF(lineItemWrpr.lineItem.Id = NULL , 
+                                                                '/img/func_icons/remove12_on.gif',
+                                                                '/img/func_icons/remove12.gif')}"></apex:image>
+                                </apex:commandLink>
+                                </apex:outputPanel>
+                                
+                                </apex:pageBlockSection>
+                                
+                                </td>
+                            </tr>
+                            <apex:variable var="index" value="{!index+1}" />
+                            
+                        </apex:repeat>
+                    </tbody>
+                </table>
+                </apex:pageblock>
+                </div>
+            </apex:outputpanel>
+            
+             
+            </td>
+            </tr>
+            </table>
+        </apex:outputLabel>
+        <apex:actionFunction action="{!addRow}" name="addRow" status="status"
+            rerender="pbOLI,psMsg" onComplete="init();">
+            <apex:param name="firstParam" assignTo="{!selectedProductId}" value="" />
+            <apex:param name="secondParam" assignTo="{!selectedProductName}" value="" />
+        </apex:actionFunction>
+        <apex:actionFunction action="{!removeRow}" name="removeRow" status="status"
+            rerender="pbOLI,psMsg" onComplete="init();">
+            <apex:param name="firstParam" assignTo="{!selectedProductId}" value="" />
+        </apex:actionFunction>
+        <apex:outputpanel >
+            <apex:actionstatus id="status">
+                <apex:facet name="start">
+                    <div class="waitingSearchDiv" id="el_loading"
+                        style="background-color: #fbfbfb; height: 100%; opacity: 0.65; width: 100%; z-index: 9000;">
+                    <div class="waitingHolder" style="top: 74.2px; width: 91px;">
+                    <img class="waitingImage" src="/img/loading.gif"
+                        title="Please Wait..." /> <span class="waitingDescription">Please
+                    Wait...</span></div>
+                    </div>
+                </apex:facet>
+            </apex:actionstatus>
+        </apex:outputpanel>
+    </apex:form>
+</apex:page>

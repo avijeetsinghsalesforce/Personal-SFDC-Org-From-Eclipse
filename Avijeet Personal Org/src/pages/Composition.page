@@ -1,0 +1,18 @@
+<apex:page controller="compositionExample">
+    <apex:form >
+        <apex:actionFunction name="test" action="{!test}" rerender="panel" status="myStatus"/>
+        <apex:outputText >Hello testing page</apex:outputText>
+        <hr/>
+        <br />
+        
+        <apex:insert name="age" />
+        <br />
+        
+             
+        
+        <apex:outputPanel onclick="test()" styleClass="btn"> 
+            Click Me to fire action function
+        </apex:outputPanel>   
+        
+    </apex:form>
+</apex:page>

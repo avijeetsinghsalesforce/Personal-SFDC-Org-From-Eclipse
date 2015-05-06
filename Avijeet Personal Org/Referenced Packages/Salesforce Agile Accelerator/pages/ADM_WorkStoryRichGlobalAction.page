@@ -1,0 +1,93 @@
+<apex:page showHeader="false" controller="agf.ADM_StoryControllerGlobalAction" extensions="agf.ADM_WorkRemoteActionsExtension" docType="html-5.0" sidebar="false" standardStylesheets="false" cache="true" expires="600">
+<meta name="viewport" content="user-scalable=no,width=device-width,initial-scale=1.0,maximum-scale=1.0" />
+<apex:styleSheet value="{!$Resource.agf__adm_workmdp_css}" />
+<apex:includeScript value="{!$Resource.agf__jquery_1_8_3_min}" />
+<apex:includeScript value="{!URLFOR($Resource.agf__jquery_ui_1_9_2_redmond, 'js/jquery-ui-1.9.2.custom.min.js')}" />
+<apex:includeScript value="{!$Resource.agf__ADM_common_js}" />
+<apex:includeScript value="{!$Resource.agf__productTagMdp_js}" />
+<apex:includeScript value="{!$Resource.agf__ADM_autocomplete2js}" />
+<apex:includeScript value="{!$Resource.agf__ADM_Work_js}" />    
+<apex:includeScript value="{!$Resource.agf__ADM_GlobalActionCommonjs}"/>
+<apex:outputPanel layout="none" rendered="{!isMobile}"><link href="{!$Resource.adm_workmdp_mobile_css}" rel="stylesheet" type="text/css" /></apex:outputPanel>
+<script type='text/javascript' src='/canvas/sdk/js/29.0/publisher.js'></script>
+<script type="text/javascript">
+var view;
+var isGlobalAction = true;
+$(function() {
+    view = new UserStoryEditView({
+        app: window,
+        controller: {
+            getWorkAssignments: window.getWorkAssignments
+        },
+        productTagComponent: window.productTag,
+        recordTypeId: '{!recordType.Id}',
+        isNew: true
+    });
+
+	Sfdc.canvas.publisher.publish({name: "publisher.setValidForSubmit", payload:"true"});
+
+});
+
+if ("{!lastError}" === "ok") {
+	if(onProjectOne()){
+	    sforce.one.navigateToSObject('{!work.Id}');
+	} else{
+		window.top.location = '/{!work.id}';
+	}
+}
+
+$(window).load(function() {
+    Sfdc.canvas.publisher.publish({name: "publisher.setValidForSubmit", payload:"true"});
+	Sfdc.canvas.publisher.subscribe({name: "publisher.post", onData:function(e) {
+		var saveButtonID = document.getElementById("saveButtonId").innerHTML;
+		var save = document.getElementById(saveButtonID);
+		save.click();
+	}});
+});
+</script>
+
+<apex:form id="storyWorkForm">
+<apex:inputHidden id="typeInput" value="{!work.agf__Type__c}" />
+
+    <div class="gusFieldset">
+		<apex:pageMessages />
+
+        <div class="gusForm" id="mainTop">
+            <div class="gusForm1Column">
+			    <div class="gusFormRow">
+					<div class="gusFormField gusFormFieldLeft gusFieldRequired"><label for="Subject__c">Subject</label></div>
+                    <div class="gusFormField gusFormFieldRight gusFieldRequired"><apex:inputField type="text" id="Subject__c" value="{!work.agf__Subject__c}" styleClass="Subject__c" html-autocorrect="off" html-autocapitalize="off" html-autocomplete="off" /></div>
+			    </div>
+                <div class="gusFormRow gusRow_ADM_Work__c_Product_Tag__c">
+                    <div class="gusFormField gusFormFieldLeft gusFieldRequired"><label>{!$ObjectType.agf__ADM_Work__c.fields.agf__Product_Tag__c.Label}</label></div>
+                    <div class="gusFormField gusFormFieldRight gusFieldRequired">
+                             <c:ADM_ProductTagInput id="productTagInput" work="{!work}" recordType="{!recordType}" />
+                    </div>
+                </div>
+                <div class="gusFormRow">
+                    <div class="gusFormField gusFormFieldLeft"><label for="Details__c">Description</label></div>
+                    <div class="gusFormField gusFormFieldRight"><apex:inputTextarea id="Details__c" styleClass="DstpInput afterProductTagInput" value="{!work.agf__Details__c}" /></div>
+                </div>
+            </div>
+        </div>
+
+	    <div class="gusForm">
+	        <div class="gusForm2Column">
+				<c:ADM_FormRowUserInput id="assigneeInput" object="{!work}" field="Assignee__c" type="ADM_Work__c" required="false" value="{!work.agf__Assignee__c}" cssClass="assigneeInput" />
+                <c:ADM_FormRowUserInput id="qaEngineerInput" object="{!work}" field="QA_Engineer__c" type="ADM_Work__c" required="false" value="{!work.agf__QA_Engineer__c}" cssClass="qaEngineerInput" />
+	        </div>
+	        <div class="gusForm2Column">
+				<c:ADM_FormRowUserInput id="productOwnerInput" object="{!work}" field="Product_Owner__c" type="ADM_Work__c" required="false" value="{!work.agf__Product_Owner__c}" cssClass="productOwnerInput" />
+			    <div class="gusFormRow">
+					<div class="gusFormField gusFormFieldLeft"><label for="Sprint__c">Sprint</label></div>
+					<div class="gusFormField gusFormFieldRight"><c:ADM_AutoComplete2 id="sprintInput" ObjectName="ADM_Sprint__c" obj="{!work}" inputFieldName="Sprint__c" inputStyleClass="sprintInput" /></div>
+			    </div>
+	        </div>
+	    </div>
+
+        <div class="gusFormToolbar gusFormToolbarBottom"><apex:commandButton action="{!saveAndView}" value="Save" id="theButton" /></div>
+        <div id="saveButtonId" style="display:none">{!$Component.storyWorkForm.theButton}</div>
+	</div> 
+
+</apex:form>
+</apex:page>

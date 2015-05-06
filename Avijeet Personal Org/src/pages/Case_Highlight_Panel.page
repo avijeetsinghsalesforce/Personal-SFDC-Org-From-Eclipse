@@ -1,0 +1,202 @@
+<apex:page standardController="case" setup="false" showHeader="false" >
+    <style>
+        .box{
+        /*-webkit-box-shadow: inset 2px 2px 2px 2px #333333;
+        -moz-box-shadow: inset 2px 2px 2px 2px #333333;
+        -o-box-shadow: inset 2px 2px 2px 2px #333333;
+        -ms-box-shadow: inset 2px 2px 2px 2px #333333;
+        box-shadow: inset 2px 2px 2px 2px #333333;
+        -webkit-border-radius:1em;
+        -moz-border-radius:1em;
+        -o-border-radius:1em;
+        -ms-border-radius:1em;
+        border-radius:1em;*/
+        background-color: #FFFFFF;
+        color: #121212;
+        font-size: 18.0px;
+        //-ms-border-radius:1.0em;
+        margin:10px;
+        padding: 10px;
+        }
+        #highlightpanelcontainer{
+        width: 100%;
+        font-size: 12px;
+        overflow: hidden; /* contain floated elements */
+        //background: #ccc
+        }
+        #panel1{
+        float: left; 
+        width: 31%;
+        //background-color: #bbb;
+        }
+        #panel2{ 
+        float: left;
+        //background-color: #eee;
+        width: 29%;
+        }
+        #panel3{
+        float: left;
+        width: 29%;
+        text-align : center;
+        //background-color: #bbb;
+        }  
+        #infotable{
+        width : 100%;
+        margin: 10px;
+        } 
+        #containertable{
+        table-layout: fixed;
+        width: 100%;
+        }  
+        h2{
+        border-collapse: separate;
+        color: rgb(0, 0, 0);
+        display: block;
+        font-family: Arial, Helvetica, sans-serif;
+        font-size: 13px;
+        font-weight: bold;
+        height: 16px;
+        margin-bottom: 0px;
+        margin-left: 0px;
+        margin-right: 0px;
+        margin-top: 0px;
+        padding-bottom: 0px;
+        padding-left: 0px;
+        padding-right: 0px;
+        padding-top: 0px;
+        }  
+        img{   display: block;   /*margin-left: auto;   margin-right: auto;*/ } 
+        tr{
+        width:100%;
+        }  
+        td{
+        text-overflow:ellipsis;
+        }  
+        label{
+        border-bottom-color: rgb(236, 236, 236);
+        border-bottom-style: solid;
+        border-bottom-width: 1px;
+        border-collapse: separate;
+        border-left-color: rgb(236, 236, 236);
+        border-right-color: rgb(236, 236, 236);
+        border-top-color: rgb(236, 236, 236);
+        color: rgb(74, 74, 86);
+        display: table-cell;
+        font-family: Arial, Helvetica, sans-serif;
+        font-size: 10px;
+        font-weight: normal;
+        height: 16px;
+        margin-bottom: 0px;
+        margin-left: 0px;
+        margin-right: 0px;
+        margin-top: 0px;
+        max-width: 330px;
+        padding-bottom: 3px;
+        padding-left: 2px;
+        padding-right: 2px;
+        padding-top: 3px;
+        text-align: right;
+        vertical-align: top;
+        width: 125px;
+        word-wrap: break-word;
+        } 
+        .value{
+        text-align:left;
+        font-weight:bold;
+        }  
+        .tdlabel{
+        text-align:right;        
+        }      
+    </style>
+    <apex:includeScript value="/support/console/22.0/integration.js"/>
+    
+
+    
+   
+    
+    <table id="containertable">
+        <tr>
+            <td id="customerdetails" style=" width: 40%;">
+             <div width="100%">
+               <table style="table-layout: fixed;width:100%;">
+                  <tr>
+                      <td>
+                          <label>Customer Name</label>
+                      </td>
+                      <td>
+                         <label title="View Customer Profile in HQ" class="value" style="text-decoration: underline;font-size:11px;">{!case.Contact.Name}</label>
+                      </td>
+                  </tr>
+                  <tr>
+                      <td>
+                          <label>Customer Email</label>
+                      </td>
+                      <td>
+                          <label title="View Customer Profile in HQ" style="text-decoration: underline;" class="value">{!case.Contact.Email}</label>
+                      </td>
+                  </tr>
+                  <tr>
+                      <td>
+                          <label>Customer Mobile</label>
+                      </td>
+                      <td>
+                          <label title="View Customer Profile in HQ" style="text-decoration: underline;" class="value">{!case.Contact.MobilePhone}</label>
+                      </td>
+                  </tr>
+                  <tr>
+                      <td>
+                          <label>Customer Phone</label>
+                      </td>
+                      <td>
+                          <label title="View Customer Profile in HQ" style="text-decoration: underline;" class="value">{!case.Contact.Phone}</label>
+                      </td>
+                  </tr>
+               </table>
+               </div>
+            </td>
+            <td id="timelineinfo" style=" width: 30%;border-right: 1px solid #DBDFE0;border-left: 1px solid #DBDFE0;">
+                 <div width="100%">
+               <table style="table-layout: fixed;width:100%;">
+                  <tr>
+                      <td>
+                          <label>Case Status</label>
+                      </td>
+                      <td>
+                          <label class="value">{!case.Status}</label>
+                      </td>
+                  </tr>
+               </table>
+               </div>
+            </td>
+            <td id="casedetails" style=" width: 30%;">
+               <div width="100%">
+               <table style="table-layout: fixed;width:100%;">
+                  <tr>
+                      <td>
+                          <label>Case Origin</label>
+                      </td>
+                      <td>
+                          <apex:image url="{!URLFOR($Resource.logos,'email.png')}" height="32px" width="32px" alt="Origin" rendered="{!case.Origin='Email'}"/>
+                          <apex:image url="{!URLFOR($Resource.logos,'phone.png')}" height="32px" width="32px" alt="Origin" rendered="{!case.Origin='Phone'}"/>
+                          <apex:image url="{!URLFOR($Resource.logos,'web.png')}" height="32px" width="32px" alt="Origin" rendered="{!case.Origin='Web'}"/>
+                          <apex:image url="{!URLFOR($Resource.logos,'twitter.png')}" height="32px" width="32px" alt="Origin" rendered="{!case.Origin='Twitter'}"/>
+                          <apex:image url="{!URLFOR($Resource.logos,'facebook.png')}" height="32px" width="32px" alt="Origin" rendered="{!case.Origin='Facebook'}"/>
+                      </td>
+                  </tr>
+                  <tr>
+                      <td>
+                          <label>Case Priority</label>
+                      </td>
+                      <td>
+                          <apex:image url="{!URLFOR($Resource.logos,'red.png')}" height="32px" width="32px" alt="Origin" rendered="{!case.Priority='High'}"/>
+                          <apex:image url="{!URLFOR($Resource.logos,'orange.png')}" height="32px" width="32px" alt="Origin" rendered="{!case.Priority='Medium'}"/>
+                          <apex:image url="{!URLFOR($Resource.logos,'green.png')}" height="32px" width="32px" alt="Origin" rendered="{!case.Priority='Low'}"/>
+                         
+                      </td>
+                  </tr>
+               </table>
+               </div>
+            </td>
+        </tr>
+    </table>    
+</apex:page>

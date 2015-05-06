@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Package xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Send with SignNow</fullName>
+    <apiAccessLevel>Unrestricted</apiAccessLevel>
+    <description>Open with SignNow</description>
+    <namespacePrefix>cuda_signnow</namespacePrefix>
+    <types>
+        <members>MockHttpResponseGenerator</members>
+        <members>SignNowController</members>
+        <members>SignNowException</members>
+        <members>SignNowTemplatesController</members>
+        <members>TestSignNowController</members>
+        <members>TestSignNowTemplatesController</members>
+        <name>ApexClass</name>
+    </types>
+    <types>
+        <members>sn_section</members>
+        <members>sn_templates</members>
+        <name>ApexPage</name>
+    </types>
+    <types>
+        <members>SignNow</members>
+        <name>CustomApplication</name>
+    </types>
+    <types>
+        <members>SNAccess__c.access_token__c</members>
+        <members>SNAccess__c.refresh_token__c</members>
+        <members>SNAccess__c.salesforce_user_id__c</members>
+        <members>SNAccess__c.signnow_email__c</members>
+        <members>SNAccess__c.signnow_user_id__c</members>
+        <members>SNInvite__c.document_id__c</members>
+        <members>SNInvite__c.salesforce_uid__c</members>
+        <members>SNInvite__c.signnow_user_id__c</members>
+        <members>SNInvite__c.status__c</members>
+        <members>SNInvite__c.template_id__c</members>
+        <members>SNTemplate__c.active__c</members>
+        <members>SNTemplate__c.document_id__c</members>
+        <members>SNTemplate__c.document_owner__c</members>
+        <members>SNTemplate__c.salesforce_uid__c</members>
+        <members>SNTemplate__c.sf_owner_signnow_user_id__c</members>
+        <members>SNTemplate__c.team_template__c</members>
+        <members>SNTemplate__c.updated__c</members>
+        <name>CustomField</name>
+    </types>
+    <types>
+        <members>SNAccess__c</members>
+        <members>SNInvite__c</members>
+        <members>SNTemplate__c</members>
+        <name>CustomObject</name>
+    </types>
+    <types>
+        <members>Setup</members>
+        <name>CustomTab</name>
+    </types>
+    <types>
+        <members>SNAccess__c-SNAccess Layout</members>
+        <members>SNInvite__c-SNInvite Layout</members>
+        <members>SNTemplate__c-SNTemplate Layout</members>
+        <name>Layout</name>
+    </types>
+    <types>
+        <members>SNAccess__c.All</members>
+        <members>SNInvite__c.All</members>
+        <members>SNTemplate__c.All</members>
+        <name>ListView</name>
+    </types>
+    <types>
+        <members>Contact.Send_with_SignNow</members>
+        <name>WebLink</name>
+    </types>
+    <version>31.0</version>
+</Package>

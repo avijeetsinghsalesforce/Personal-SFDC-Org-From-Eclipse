@@ -1,0 +1,35 @@
+<apex:page standardController="Contact" extensions="VehicleImageLoadExtension">    
+    <script type="text/javascript">
+    function getVehicleImage (vehicleName) {
+        //alert(vehicleName);
+        Visualforce.remoting.Manager.invokeAction(
+            '{!$RemoteAction.VehicleImageLoadExtension.loadVehicleImage}',
+            vehicleName, 
+            function(result, event){
+               
+            }, 
+            {escape: true}
+        );
+    }   
+    function openImage(id)    {        
+        var url = "https://ap1.salesforce.com/apex/Vehicle_Image?id=" + id ;        
+        window.open(url,"_self");
+    } 
+    </script>    
+    <apex:outputPanel >
+        <apex:sectionHeader title="Vehicle Details"/>
+        <apex:pageBlock >
+            <apex:form >      
+                <apex:pageBlockSection columns="1" title="Vehicle Details">
+                    <apex:pageBlockTable value="{!contact.Vehicles__r}" var="vehicle" onrowClick="openImage('{!vehicle.Id}')">
+                        <apex:column headerValue="Vehicle Number">
+                            <apex:outputText value="{!vehicle.Name}"></apex:outputText>                                                      
+                        </apex:column>                                                
+                        <apex:column headerValue="Model Name" value="{!vehicle.Model__c}"/>
+                        <apex:column headerValue="Date of Sale" value="{!vehicle.Sale_Date__c}"/>
+                    </apex:pageBlockTable>
+                </apex:pageBlockSection>
+            </apex:form>
+        </apex:pageBlock>        
+    </apex:outputPanel>    
+</apex:page>

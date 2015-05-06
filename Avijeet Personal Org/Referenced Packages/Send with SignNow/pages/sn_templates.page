@@ -1,0 +1,68 @@
+<apex:page standardController="Account" extensions="cuda_signnow.SignNowTemplatesController">
+
+    <style type="text/css">
+        .test {font-size: 115%;margin-bottom:10px;}
+        table.tbl_templates {border-collapse:collapse;width:100%;}
+        table.tbl_templates td:first-child {width:10%}
+        table.tbl_templates td {border: 0px;border-bottom:1px solid #ececec;}
+        table.tbl_templates a {text-decoration: none; color: #1698BF;font-weight:bold;}
+        table.tbl_templates a:hover {text-decoration: underline;}
+        #signnowMsgPrepare {font-size:20px;font-weight:bold;margin-top:20px;}
+    </style>
+
+	<apex:form id="myform">
+        <apex:actionFunction name="loadTemplates" action="{!loadTemplates}" rerender="templatelist"/>
+        <apex:actionFunction name="eatGood" action="{!eatGood}" rerender="" />
+        <apex:inputHidden value="{!document_id}" id="document_id"/>
+    </apex:form>
+
+	<apex:outputPanel id="templatelist">
+	        <br/>
+            <h2 class="test">Documents for Signing</h2>
+	        <br/>
+        	<apex:form >
+            <table class="tbl_templates" border="0" cellpadding="5">
+                <th>Action</th><th>Title</th><th>Owner</th><th>Last Modified</th>
+            	<apex:repeat value="{!mytemplates}" var="o">
+                    <tr><td><button onclick="send('{!o.cuda_signnow__document_id__c}')">Send for Signing</button></td><td><apex:outputText value="{!o.name}"/></td><td><apex:outputText value="{!o.cuda_signnow__document_owner__c}"/></td>
+                        <td><apex:outputText value="{!o.cuda_signnow__updated__c}"/></td>
+                    </tr>
+                </apex:repeat>
+            </table>
+	        </apex:form>
+    </apex:outputPanel>
+
+    <apex:outputPanel id="preparing">
+        <div id="signnowMsgPrepare">Preparing your document... You'll be redirected to SignNow for completion.</div>
+    </apex:outputPanel>
+    
+  <script>
+    	var send = function(document_id){
+            window.open("{!$Page.sn_templates}"+"?document_id="+document_id);
+        };
+
+    	var init = function(){
+            var document_id = "{!document_id}";
+            var disableList = "{!disableList}";
+
+			if(document_id){
+                var element = document.getElementById('{!$Component.templatelist}');
+                element.style.display = "none";
+                document.getElementById('{!$Component.myform.document_id}').value = document_id;
+                eatGood();
+            }else if(disableList == 'true'){
+				var element = document.getElementById('{!$Component.templatelist}');
+                element.style.display = "none";
+     			element = document.getElementById('{!$Component.preparing}');
+                element.style.display = "none";
+            }else{
+				var element = document.getElementById('{!$Component.preparing}');
+                element.style.display = "none";
+                loadTemplates();
+            }
+        };
+    
+    init();
+    
+  </script>
+</apex:page>

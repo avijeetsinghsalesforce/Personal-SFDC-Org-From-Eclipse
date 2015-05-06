@@ -1,0 +1,19 @@
+<apex:page controller="UpdateUserProfileController" sidebar="false" showHeader="false" docType="html-5.0">      
+    <apex:pageMessages ></apex:pageMessages>
+    <apex:form > 
+        <apex:pageBlock >
+            <apex:pageBlockSection title="Update User Profile" collapsible="false" columns="2">
+                <apex:selectList label="Select User Name" size="1" value="{!selectedUserId}">
+                    <apex:selectOptions value="{!userList}"></apex:selectOptions>
+                </apex:selectList>
+                <apex:selectList label="Select Profile Name" size="1" value="{!selectedProfileId}">
+                    <apex:selectOptions value="{!profileList}"></apex:selectOptions>
+                </apex:selectList>
+            </apex:pageBlockSection>
+            <center>
+                <apex:commandButton value="Submit" action="{!updateUser}"/>
+            </center>
+        </apex:pageBlock>           
+    </apex:form>
+    
+</apex:page>

@@ -1,0 +1,84 @@
+<apex:page showHeader="false" sidebar="false" applyHtmlTag="false" applyBodyTag="false">
+    <html lang="en">
+    <head>
+      <meta charset="utf-8"/>
+      <title>jQuery UI Slider - Snap to increments</title>
+      <link rel="stylesheet" href="//code.jquery.com/ui/1.10.4/themes/smoothness/jquery-ui.css"/>
+      <script src="//code.jquery.com/jquery-1.9.1.js"></script>
+      <script src="//code.jquery.com/ui/1.10.4/jquery-ui.js"></script>
+      <link rel="stylesheet" href="/resources/demos/style.css"/>
+      <style>
+        #slider {
+        height: 10px;
+        width: 300px;
+        }
+        #red {
+            height: 10px;
+            width: 100px;
+            background-color: red;
+            float: left;
+        }
+        #green {
+            height: 10px;
+            width: 100px;
+            background-color: green;
+            float: left;
+        }
+        #orange{
+            height: 10px;
+            width: 100px;
+            background-color: rgb(255, 235, 0);
+            float: left;
+        }
+        #value {
+            padding-top: 30px;
+            border: 0;
+        }
+      </style>
+      <script>
+      $(function() {
+        $( "#slider" ).slider({
+          value:50,
+          min: 0,
+          max: 300,         
+          slide: function( event, ui ) {           
+            var stringtoshow = returnChosenMode(ui.value);
+            $( "#amount" ).val( stringtoshow  );
+          }
+        });        
+        
+      });
+      
+      function returnChosenMode(var1)
+        {
+            if (var1>0&&var1<100)    {
+                return "low";
+            }
+            if (var1>100&&var1<200)    {
+                return "medium";
+            }
+            if (var1>200&&var1<300)    {
+                return "high";
+            }
+        }
+      
+      </script>
+    </head>
+    <body>
+     
+    <p>
+      <label for="amount">Selected Mode</label>
+      <input type="text" id="amount" style="border:0; color:#f6931f; font-weight:bold;"/>
+    </p>
+     
+    <center>
+    <div style="width:300px" id="slider">
+        <div id="green"></div>
+        <div id="orange"></div>
+        <div id="red"></div>
+    </div>
+    </center> 
+     
+    </body>
+    </html>
+</apex:page>

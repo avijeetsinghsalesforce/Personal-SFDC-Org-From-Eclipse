@@ -1,0 +1,17 @@
+<apex:page standardController="Vehicle__c" sidebar="false" showHeader="false" tabStyle="Contact">
+  <apex:pageBlock >
+      <apex:pageBlockSection columns="1" title="Vehicle Image">
+          <apex:outputField value="{!vehicle__c.Vehicle_Image__c }"/>
+      </apex:pageBlockSection>
+  </apex:pageBlock>
+  <apex:pageBlock >
+      <apex:pageBlockSection title="Packages" columns="1">
+          <apex:pageBlockTable value="{!Vehicle__c.Packages__r}" var="package">
+              <apex:column headerValue="Package Name" value="{!package.Name}"/>
+              <apex:column headerValue="Package Type" value="{!package.Package_Type__c}"/>
+              <apex:column headerValue="Installed Date" value="{!package.Installed_date__c}"/>
+              <apex:column headerValue="Package Price" value="{!package.Price__c}"/>
+          </apex:pageBlockTable>
+      </apex:pageBlockSection>
+  </apex:pageBlock>
+</apex:page>

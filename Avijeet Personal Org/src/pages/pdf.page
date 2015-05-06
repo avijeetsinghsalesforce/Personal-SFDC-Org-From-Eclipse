@@ -1,0 +1,76 @@
+<apex:page renderAs="pdf">
+    <head>
+
+    <style type="text/css" media="print">
+        @page {
+        size: 8.5in 11in;/* width height */
+        }
+        
+        @page {
+        
+        
+        @top-center {
+        
+        content: element(header);
+        
+        }
+        
+        @bottom-left {
+        
+        content: element(footer);
+        
+        }
+        
+        }
+        
+        div.header {
+        
+        padding: 10px;
+        
+        position: running(header);
+        
+        }
+        div.footer {
+        
+        display: block;
+        
+        padding: 5px;
+        
+        position: running(footer);
+        
+        }
+        
+        .pagenumber:before {
+        
+        content: counter(page);
+        
+        }
+        
+        .pagecount:before {
+        
+        content: counter(pages);
+        
+        }
+    
+    </style>
+    
+    <div class="header">
+
+        <div align="right">This is Header</div>
+
+    </div>
+
+    <div class="footer">
+
+        <div>Footer - Page <span class="pagenumber"/> of <span class="pagecount"/></div>
+
+    </div>
+    
+    <div class="content">
+
+    <p>This is content</p>
+
+    </div>
+
+</head>
+</apex:page>
